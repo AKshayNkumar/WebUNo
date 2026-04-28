@@ -1,0 +1,97 @@
+import { Mic, Phone, Banknote, Pill, Home, List, Heart, BookOpen, Users } from "lucide-react";
+
+export default function HomeScreen() {
+  const today = new Date().toLocaleDateString('en-US', { 
+    weekday: 'long', 
+    year: 'numeric', 
+    month: 'long', 
+    day: 'numeric' 
+  });
+
+  return (
+    <main style={{
+      maxWidth: "600px",
+      margin: "0 auto",
+      padding: "16px",
+      fontFamily: "sans-serif"
+    }}>
+      
+      <h1 style={{ fontSize: "32px", fontWeight: "bold" }}>
+        Good Morning, Kamala 🌅
+      </h1>
+      <p>{today}</p>
+
+      {/* MIC BUTTON */}
+      <button style={{
+        width: "100%",
+        height: "120px",
+        background: "red",
+        color: "white",
+        fontSize: "20px",
+        marginTop: "20px"
+      }}>
+        🎤 Tap and speak
+      </button>
+
+      {/* REMINDERS */}
+      <div style={{ marginTop: "30px" }}>
+        <h2>Today's Reminders</h2>
+
+        <div style={{
+          padding: "20px",
+          borderLeft: "6px solid green",
+          marginTop: "10px",
+          background: "#fff"
+        }}>
+          💊 Metformin – After Breakfast
+        </div>
+
+        <div style={{
+          padding: "20px",
+          borderLeft: "6px solid orange",
+          marginTop: "10px",
+          background: "#fff"
+        }}>
+          💡 Electricity Bill – Due Today
+        </div>
+      </div>
+
+      {/* QUICK TASKS */}
+      <div style={{ marginTop: "30px" }}>
+        <h2>Quick Tasks</h2>
+
+        <button style={{ width: "100%", height: "80px", marginTop: "10px" }}>
+          📞 Call Daughter
+        </button>
+
+        <button style={{ width: "100%", height: "80px", marginTop: "10px" }}>
+          💰 Check Bank Balance
+        </button>
+
+        <button style={{ width: "100%", height: "80px", marginTop: "10px" }}>
+          💊 Medicine Schedule
+        </button>
+      </div>
+
+      {/* BOTTOM NAV */}
+      <div style={{
+        position: "fixed",
+        bottom: 0,
+        left: 0,
+        width: "100%",
+        height: "70px",
+        background: "#eee",
+        display: "flex",
+        justifyContent: "space-around",
+        alignItems: "center"
+      }}>
+        <span>🏠 Home</span>
+        <span>📋 Tasks</span>
+        <span>❤️ Health</span>
+        <span>📖 Diary</span>
+        <span>👥 Help</span>
+      </div>
+
+    </main>
+  );
+}

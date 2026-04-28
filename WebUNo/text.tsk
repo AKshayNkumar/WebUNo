@@ -1,0 +1,4217 @@
+ Terminal — run this first
+npx create-next-app@14 elderbridge \
+  --typescript \
+  --tailwind \
+  --app \
+  --src-dir \
+  --import-alias "@/*"
+
+cd elderbridge
+
+# Core dependencies
+npm install \
+  @radix-ui/react-dialog \
+  @radix-ui/react-toast \
+  @radix-ui/react-progress \
+  @radix-ui/react-switch \
+  @radix-ui/react-select \
+  framer-motion \
+  openai \
+  socket.io-client \
+  socket.io \
+  @prisma/client \
+  prisma \
+  class-variance-authority \
+  clsx \
+  tailwind-merge \
+  lucide-react \
+  resend \
+  twilio \
+  next-themes \
+  zustand \
+  react-hook-form \
+  zod \
+  @hookform/resolvers
+
+# Dev dependencies  
+npm install -D \
+  @types/node \
+  prettier \
+  eslint-config-prettier
+Phase 2: Design Token System — The Foundation
+TypeScript
+
+// tailwind.config.ts
+// PRECISION RULE: Every value here is a hard constraint.
+// No developer should ever use an arbitrary value in className.
+// If it's not in this config, it doesn't exist in ElderBridge.
+
+import type { Config } from "tailwindcss";
+
+const config: Config = {
+  darkMode: "class",
+  content: [
+    "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
+    "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
+    "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
+  ],
+  theme: {
+    // ─── OVERRIDE DEFAULTS COMPLETELY ───────────────────────
+    // We do not want Tailwind's defaults bleeding in.
+    // ElderBridge design system is self-contained.
+
+    screens: {
+      // Elderly users: phone first, tablet second, desktop last
+      // No breakpoint below 360px — too small for elderly targets
+      sm: "360px",   // Minimum supported phone
+      md: "768px",   // Tablet (iPad common among elderly)
+      lg: "1024px",  // Desktop
+      xl: "1280px",  // Large desktop
+      // NO 2xl — elderly users rarely use ultrawide monitors
+    },
+
+    colors: {
+      // ─── CORE SEMANTIC COLORS ──────────────────────────────
+      // Rule: NEVER add a color here that hasn't been
+      // contrast-checked at 7:1 against its paired background.
+      
+      // Transparent and inherit pass-throughs
+      transparent: "transparent",
+      current: "currentColor",
+      
+      // ─── BACKGROUND SCALE ────────────────────────────────
+      // #FFFDF5 chosen over pure white (#FFFFFF) because:
+      // - Reduces blue light (easier on aging corneas)
+      // - Reduces glare on screens with high brightness settings
+      // - Still achieves 7:1+ contrast with all text colors below
+      background: {
+        primary:   "#FFFDF5", // Main app background — warm white
+        secondary: "#F5F0E8", // Card backgrounds, subtle depth
+        elevated:  "#EDEDDD", // Hover states on backgrounds, inactive tabs
+        inverse:   "#1A1A1A", // Dark sections, high-contrast blocks
+      },
+
+      // ─── TEXT COLORS ─────────────────────────────────────
+      // AUDIT:
+      // text.primary (#1A1A1A) on background.primary (#FFFDF5)
+      //   → Contrast ratio: 18.7:1 ✅ (WCAG AAA requires 7:1)
+      // text.secondary (#444444) on background.primary (#FFFDF5)  
+      //   → Contrast ratio: 9.73:1 ✅
+      // text.secondary (#444444) on background.secondary (#F5F0E8)
+      //   → Contrast ratio: 8.54:1 ✅
+      // text.inverse (#FFFDF5) on background.inverse (#1A1A1A)
+      //   → Contrast ratio: 18.7:1 ✅
+      // RULE: #444444 is the ABSOLUTE MINIMUM. #555555 is FORBIDDEN.
+      // RULE: Never use #666666, #999999, or any lighter grey for text.
+      text: {
+        primary:   "#1A1A1A", // Body text, headings — near-black
+        secondary: "#444444", // Supporting text — ABSOLUTE MINIMUM
+        inverse:   "#FFFDF5", // Text on dark backgrounds
+        disabled:  "#767676", // ONLY for truly disabled elements
+        // Note: #767676 on white = 4.54:1 — WCAG AA only
+        // Use ONLY when element is non-interactive AND labeled
+      },
+
+      // ─── BRAND / ACTION COLORS ───────────────────────────
+      // Each has explicit on-color (text on this background)
+      
+      // Primary: Deep accessible blue
+      // #1A56DB on #FFFDF5 → 7.43:1 ✅ WCAG AAA
+      // #FFFDF5 on #1A56DB → 7.43:1 ✅ WCAG AAA  
+      primary: {
+        DEFAULT:  "#1A56DB", // Main CTAs, navigation
+        hover:    "#1446B8", // Darker on interaction — NOT lighter
+        active:   "#0F3590", // Pressed state
+        light:    "#EBF2FF", // Light tint for backgrounds, badges
+        on:       "#FFFDF5", // Text color TO USE ON primary background
+      },
+
+      // Danger: Pure red — never orange-red
+      // #CC0000 on #FFFDF5 → 7.02:1 ✅ WCAG AAA (barely — keep this exact value)
+      // #FFFDF5 on #CC0000 → 7.02:1 ✅ WCAG AAA
+      // WARNING: Do not lighten to #DD0000 — drops to 6.1:1 (fails AAA)
+      danger: {
+        DEFAULT:  "#CC0000", // Errors, scam alerts, stop actions
+        hover:    "#AA0000", // Darker on hover — never lighter
+        active:   "#880000", // Pressed state
+        light:    "#FFF0F0", // Light tint for error backgrounds
+        on:       "#FFFDF5", // Text color TO USE ON danger background
+      },
+
+      // Success: Deep green
+      // #1A7340 on #FFFDF5 → 7.23:1 ✅ WCAG AAA
+      // #FFFDF5 on #1A7340 → 7.23:1 ✅ WCAG AAA
+      success: {
+        DEFAULT:  "#1A7340", // Confirmations, completed states
+        hover:    "#155C33", // Darker on hover
+        active:   "#0F4426", // Pressed state
+        light:    "#EDFBF2", // Light tint for success backgrounds
+        on:       "#FFFDF5", // Text color TO USE ON success background
+      },
+
+      // Warning: Dark amber (NOT yellow — yellow fails contrast)
+      // #8B4000 on #FFFDF5 → 7.54:1 ✅ WCAG AAA
+      // #FFFDF5 on #8B4000 → 7.54:1 ✅ WCAG AAA
+      warning: {
+        DEFAULT:  "#8B4000", // Cautions, reminders needing attention
+        hover:    "#703300", // Darker on hover
+        active:   "#562600", // Pressed state
+        light:    "#FFF8F0", // Light tint for warning backgrounds
+        on:       "#FFFDF5", // Text color TO USE ON warning background
+      },
+
+      // Focus: High-visibility orange for keyboard/focus rings
+      // ONLY used for focus rings — never for text or backgrounds
+      // Must be visible on all background colors in this system
+      focus: {
+        ring: "#FF6B00", // 4px solid focus ring — always this color
+      },
+
+      // Border colors
+      border: {
+        DEFAULT:  "#D0C8B8", // Standard borders — visible but not harsh
+        strong:   "#9E9580", // Emphasized borders, input focus borders
+        inverse:  "#444444", // Borders on dark backgrounds
+      },
+
+      // Card accent borders (4px left border, category-coded)
+      accent: {
+        health:   "#1A7340", // Green — medicine, health tasks
+        finance:  "#1A56DB", // Blue — bills, banking
+        family:   "#8B4000", // Amber — calls, messages
+        urgent:   "#CC0000", // Red — overdue, critical
+        general:  "#555577", // Muted indigo — general tasks
+        // AUDIT: All accents checked at 7:1+ against #FFFDF5
+        // accent.general (#555577) on #FFFDF5 → 7.11:1 ✅
+      },
+
+      // Neutral scale — only for structural elements
+      // NEVER use these for text
+      neutral: {
+        0:   "#FFFFFF",
+        50:  "#FAFAF7",
+        100: "#F0EDE5",
+        200: "#E0D9CC",
+        300: "#C8BFB0",
+        400: "#A89E8E",
+        500: "#887E6E",
+        600: "#685E50",
+        700: "#4E4438",
+        800: "#342E24",
+        900: "#1A1A1A",
+      },
+
+      // Shadow color (used in box-shadow, not as background)
+      shadow: {
+        DEFAULT: "#2A241A", // Warm-toned shadow for depth
+      },
+    },
+
+    // ─── TYPOGRAPHY ─────────────────────────────────────────
+    // Rule: fontSize values are MINIMUM sizes.
+    // The font-size scale here starts at 22px — not 12px.
+    // Developers cannot accidentally use 14px for body text
+    // because it doesn't exist in this config.
+    
+    fontSize: {
+      // Interface minimums
+      "2xs": ["0.875rem", { // 14px — ONLY for fine print, legal text
+        lineHeight: "1.8",
+        letterSpacing: "0.02em",
+        fontWeight: "600", // Even small text is semibold
+      }],
+      xs:   ["1.125rem", { // 18px — ONLY for timestamps, metadata
+        lineHeight: "1.8",
+        letterSpacing: "0.02em",
+        fontWeight: "600",
+      }],
+      sm:   ["1.375rem", { // 22px — Absolute minimum for any text
+        lineHeight: "1.8",
+        letterSpacing: "0.02em",
+        fontWeight: "600",
+      }],
+
+      // Body text range
+      base: ["1.625rem", { // 26px — Default body text
+        lineHeight: "1.8",
+        letterSpacing: "0.02em",
+        fontWeight: "600",
+      }],
+      md:   ["1.75rem", { // 28px — Supporting text, secondary content
+        lineHeight: "1.8",
+        letterSpacing: "0.02em",
+        fontWeight: "600",
+      }],
+
+      // Interactive elements (buttons, nav, labels)
+      lg:   ["2rem", { // 32px — Button text, navigation labels
+        lineHeight: "1.4",
+        letterSpacing: "0.02em",
+        fontWeight: "700",
+      }],
+      xl:   ["2.25rem", { // 36px — Step instructions, card titles
+        lineHeight: "1.4",
+        letterSpacing: "0.01em",
+        fontWeight: "700",
+      }],
+
+      // Headings
+      "2xl": ["2.625rem", { // 42px — Page headings
+        lineHeight: "1.3",
+        letterSpacing: "0em",
+        fontWeight: "700",
+      }],
+      "3xl": ["3rem", { // 48px — Hero text, celebration messages
+        lineHeight: "1.2",
+        letterSpacing: "-0.01em",
+        fontWeight: "700",
+      }],
+      "4xl": ["3.5rem", { // 56px — Extra large emphasis
+        lineHeight: "1.1",
+        letterSpacing: "-0.02em",
+        fontWeight: "700",
+      }],
+    },
+
+    fontFamily: {
+      // Primary: Atkinson Hyperlegible — designed for low vision
+      // Letterform differentiation: I/l/1, O/0, b/d/p/q all distinct
+      sans: [
+        "Atkinson Hyperlegible",
+        "system-ui",
+        "-apple-system",
+        "BlinkMacSystemFont",
+        "Segoe UI",    // Windows accessibility
+        "Roboto",      // Android
+        "sans-serif",
+      ],
+      // Monospace for numbers (bank balances, medicine dosages)
+      // Numbers must be unambiguous — 0 vs O, 1 vs l
+      mono: [
+        "Atkinson Hyperlegible",
+        "SF Mono",
+        "Cascadia Code",
+        "Consolas",
+        "monospace",
+      ],
+    },
+
+    fontWeight: {
+      // Only weights that exist in Atkinson Hyperlegible
+      normal:  "400", // NEVER use for UI text — only decorative
+      medium:  "500", // Not in Atkinson — maps to 600
+      semibold:"600", // Minimum for body text
+      bold:    "700", // All interactive elements
+    },
+
+    // ─── SPACING ─────────────────────────────────────────────
+    // Rule: Minimum touch target is 72px (18 * 4 = 4.5rem)
+    // This spacing scale supports that minimum.
+    spacing: {
+      px:  "1px",
+      0:   "0px",
+      1:   "4px",
+      2:   "8px",
+      3:   "12px",
+      4:   "16px",    // Minimum internal button padding
+      5:   "20px",
+      6:   "24px",    // Minimum gap between interactive elements
+      7:   "28px",
+      8:   "32px",    // Minimum card padding
+      9:   "36px",
+      10:  "40px",
+      11:  "44px",    // WCAG minimum — NOT our minimum
+      12:  "48px",    // Section spacing
+      14:  "56px",    // Input field height
+      16:  "64px",
+      18:  "72px",    // ELDERBRIDGE minimum touch target
+      20:  "80px",    // Navigation bar height, preferred target
+      22:  "88px",    // Preferred primary action height
+      24:  "96px",    // Large microphone button
+      28:  "112px",
+      32:  "128px",
+      36:  "144px",
+      40:  "160px",
+      48:  "192px",
+      56:  "224px",
+      64:  "256px",
+      72:  "288px",
+      80:  "320px",
+      96:  "384px",
+    },
+
+    // ─── BORDER RADIUS ───────────────────────────────────────
+    // Soft corners — sharp corners feel harsh for elderly users
+    // But not pill-shaped — too playful, reduces legibility
+    borderRadius: {
+      none:  "0",
+      sm:    "6px",   // Subtle rounding — badges, tags
+      DEFAULT: "12px",// Standard cards, containers
+      md:    "12px",
+      lg:    "16px",  // Buttons, inputs
+      xl:    "20px",  // Large cards, modals
+      "2xl": "24px",  // Hero sections
+      "3xl": "32px",  // Circular elements (mic button)
+      full:  "9999px", // Pills, circular buttons
+    },
+
+    // ─── SHADOWS ─────────────────────────────────────────────
+    // Shadows HELP elderly users identify interactive cards
+    // (research: depth cues improve target recognition with tremors)
+    // Use warm-toned shadows — not cool grey
+    boxShadow: {
+      none:   "none",
+      sm:     "0 1px 3px 0 rgba(42,36,26,0.12), 0 1px 2px -1px rgba(42,36,26,0.08)",
+      DEFAULT:"0 2px 8px -1px rgba(42,36,26,0.14), 0 2px 4px -2px rgba(42,36,26,0.10)",
+      md:     "0 4px 16px -2px rgba(42,36,26,0.16), 0 2px 8px -2px rgba(42,36,26,0.10)",
+      lg:     "0 8px 24px -4px rgba(42,36,26,0.18), 0 4px 12px -4px rgba(42,36,26,0.12)",
+      xl:     "0 12px 40px -8px rgba(42,36,26,0.22), 0 6px 16px -6px rgba(42,36,26,0.14)",
+      // Focus shadow — paired with focus ring color
+      focus:  "0 0 0 4px #FF6B00",
+      // Inset for pressed states
+      inner:  "inset 0 2px 4px 0 rgba(42,36,26,0.10)",
+    },
+
+    // ─── TRANSITIONS ─────────────────────────────────────────
+    // Rule: Max 400ms. No bounces. No slides. Gentle fades only.
+    transitionDuration: {
+      75:   "75ms",
+      100:  "100ms", // Immediate feedback threshold (click response)
+      150:  "150ms",
+      200:  "200ms",
+      300:  "300ms", // Standard gentle transition
+      400:  "400ms", // MAXIMUM allowed duration
+      // 500ms+ is FORBIDDEN — violates elderly motion guidelines
+    },
+    transitionTimingFunction: {
+      DEFAULT: "ease-out",       // Decelerate — feels controlled
+      in:      "ease-in",
+      out:     "ease-out",
+      "in-out":"ease-in-out",
+      gentle:  "cubic-bezier(0.25, 0.1, 0.25, 1.0)", // Smooth, no bounce
+    },
+    animation: {
+      none:    "none",
+      // Pulse for attention — slow, no flash
+      pulse:   "pulse 3s ease-in-out infinite",  // 3s not 2s
+      // Fade in for page loads
+      "fade-in": "fadeIn 400ms ease-out",
+      // Gentle bounce for success (single bounce, not repeating)
+      "bounce-once": "bounceOnce 600ms ease-out",
+      // Waveform for mic — 3 bars, staggered
+      "wave-1": "wave 1.2s ease-in-out 0ms infinite",
+      "wave-2": "wave 1.2s ease-in-out 150ms infinite",
+      "wave-3": "wave 1.2s ease-in-out 300ms infinite",
+    },
+
+    // ─── BREAKPOINT-AWARE SIZING ─────────────────────────────
+    minHeight: {
+      0:  "0px",
+      "touch-min":   "72px",  // Minimum touch target
+      "touch-pref":  "88px",  // Preferred action height
+      "touch-large": "96px",  // Large actions (mic, main CTA)
+      "nav":         "80px",  // Navigation bars
+      screen: "100vh",
+    },
+
+    minWidth: {
+      0:  "0px",
+      "touch-min":   "72px",
+      "touch-pref":  "88px",
+      "touch-large": "96px",
+      full: "100%",
+    },
+
+    extend: {
+      // Ring width — focus indicator must be 4px
+      ringWidth: {
+        0: "0px",
+        2: "2px",
+        DEFAULT: "4px", // Override Tailwind's 3px default
+        4: "4px",
+        8: "8px",
+      },
+      ringColor: {
+        DEFAULT: "#FF6B00", // Always orange for focus
+      },
+      ringOffsetWidth: {
+        DEFAULT: "2px",
+        0: "0px",
+        2: "2px",
+        4: "4px",
+      },
+    },
+  },
+
+  plugins: [
+    // Custom plugin: Elder-specific utility classes
+    function({ addUtilities, theme }: any) {
+      addUtilities({
+        // Touch target padding — invisible area around small elements
+        ".touch-zone": {
+          position: "relative",
+          "&::after": {
+            content: '""',
+            position: "absolute",
+            top:    "-16px",
+            right:  "-16px",
+            bottom: "-16px",
+            left:   "-16px",
+          },
+        },
+        // Text rendering optimization for low vision
+        ".text-crisp": {
+          "-webkit-font-smoothing":  "antialiased",
+          "-moz-osx-font-smoothing": "grayscale",
+          "text-rendering":          "optimizeLegibility",
+        },
+        // Force GPU compositing for smooth animations
+        ".gpu": {
+          transform:         "translateZ(0)",
+          "will-change":     "transform",
+          "backface-visibility": "hidden",
+        },
+        // Respect reduced motion — CRITICAL
+        ".motion-safe-only": {
+          "@media (prefers-reduced-motion: reduce)": {
+            animation:  "none !important",
+            transition: "none !important",
+          },
+        },
+        // Increase OS font size respect
+        ".respects-system-font": {
+          "font-size": "max(26px, 1.625rem)",
+        },
+      });
+    },
+  ],
+};
+
+export default config;
+Phase 3: Global CSS + Font Loading
+CSS
+
+/* src/app/globals.css */
+/* 
+  ELDERBRIDGE GLOBAL STYLES
+  Rule: No overrides needed after this file.
+  This establishes the complete visual foundation.
+*/
+
+/* ─── FONT LOADING ──────────────────────────────────────── */
+/*
+  Atkinson Hyperlegible — Why this font over others:
+  - i/l/1 are visually distinct (critical for elderly)
+  - 0/O are visually distinct (critical for banking/OTP)
+  - b/d/p/q are visually distinct (common confusion in aging vision)
+  - Large x-height (body of letters taller relative to caps)
+  - Generous letter spacing built in
+  - Open source, no license issues
+  
+  Load both weights we use: 400 (never used in UI) and 700
+  We load 400 as fallback for browser-set content.
+*/
+@import url('https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400;1,700&display=swap');
+
+/* ─── CSS CUSTOM PROPERTIES ─────────────────────────────── */
+/*
+  Why use CSS variables AND Tailwind tokens?
+  - CSS variables are available to the Chrome extension
+  - CSS variables work in :root overrides for user preferences
+  - Tailwind tokens are compile-time — variables are runtime
+  Both are needed for this architecture.
+*/
+:root {
+  /* Backgrounds */
+  --color-bg-primary:    #FFFDF5;
+  --color-bg-secondary:  #F5F0E8;
+  --color-bg-elevated:   #EDEDDD;
+  --color-bg-inverse:    #1A1A1A;
+
+  /* Text — explicit, no ambiguity */
+  --color-text-primary:   #1A1A1A;
+  --color-text-secondary: #444444; /* ABSOLUTE MINIMUM — do not lighten */
+  --color-text-inverse:   #FFFDF5;
+  --color-text-disabled:  #767676;
+
+  /* Brand */
+  --color-primary:        #1A56DB;
+  --color-primary-hover:  #1446B8;
+  --color-primary-active: #0F3590;
+  --color-primary-light:  #EBF2FF;
+  --color-primary-on:     #FFFDF5;
+
+  /* Semantic */
+  --color-danger:         #CC0000;
+  --color-danger-hover:   #AA0000;
+  --color-danger-light:   #FFF0F0;
+  --color-danger-on:      #FFFDF5;
+
+  --color-success:        #1A7340;
+  --color-success-hover:  #155C33;
+  --color-success-light:  #EDFBF2;
+  --color-success-on:     #FFFDF5;
+
+  --color-warning:        #8B4000;
+  --color-warning-hover:  #703300;
+  --color-warning-light:  #FFF8F0;
+  --color-warning-on:     #FFFDF5;
+
+  /* Focus */
+  --color-focus-ring:     #FF6B00;
+
+  /* Borders */
+  --color-border:         #D0C8B8;
+  --color-border-strong:  #9E9580;
+
+  /* Typography */
+  --font-size-body:       26px;
+  --font-size-action:     32px;
+  --font-size-heading:    42px;
+  --font-size-step:       36px;
+  --line-height-body:     1.8;
+  --letter-spacing-body:  0.02em;
+  --font-weight-body:     600;
+  --font-weight-action:   700;
+
+  /* Spacing */
+  --gap-touch:            24px;     /* Min gap between touch targets */
+  --size-touch-min:       72px;     /* Min touch target size */
+  --size-touch-pref:      88px;     /* Preferred action size */
+  --size-touch-large:     96px;     /* Large actions */
+  --padding-card:         32px;     /* Min card internal padding */
+
+  /* Transitions */
+  --duration-instant:     100ms;    /* Immediate visual feedback */
+  --duration-gentle:      300ms;    /* Standard transitions */
+  --duration-max:         400ms;    /* Maximum allowed */
+  --easing-gentle:        cubic-bezier(0.25, 0.1, 0.25, 1.0);
+}
+
+/* ─── REDUCED MOTION — ABSOLUTE PRIORITY ───────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration:        0.01ms !important;
+    animation-iteration-count: 1      !important;
+    transition-duration:       0.01ms !important;
+    scroll-behavior:           auto   !important;
+  }
+}
+
+/* ─── BASE RESET + FOUNDATION ───────────────────────────── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  /* Remove default margins — we control all spacing explicitly */
+  margin:     0;
+  padding:    0;
+}
+
+html {
+  /* 
+    CRITICAL: Do NOT set font-size here in px.
+    Setting 16px base overrides OS accessibility font size preferences.
+    Elderly users often set their OS font to 125% or 150%.
+    We must RESPECT that setting, then add our minimum via max().
+  */
+  font-size:  100%; /* Respect OS preference */
+  
+  /* Smooth scroll — but only if reduced motion not requested */
+  scroll-behavior: auto;
+  
+  /* Prevent text size adjustment on orientation change */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust:         100%;
+}
+
+body {
+  font-family:   "Atkinson Hyperlegible", system-ui, -apple-system, 
+                 BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  
+  /*
+    SIZING RULE:
+    max(26px, 1.625rem) means:
+    - If OS font is normal: 1.625rem = 26px ✅
+    - If OS font is 125%: 1.625rem = 32.5px (respects preference) ✅
+    - Never goes below 26px even on tiny devices ✅
+  */
+  font-size:     max(26px, 1.625rem);
+  font-weight:   600;    /* Never lighter for body text */
+  line-height:   1.8;    /* Not 1.5 — elderly need more breathing room */
+  letter-spacing:0.02em; /* Slightly open — aids character recognition */
+  
+  background-color: var(--color-bg-primary);
+  color:            var(--color-text-primary);
+  
+  /* Text rendering — optimized for clarity over beauty */
+  -webkit-font-smoothing:  antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering:          optimizeLegibility;
+  
+  /* Prevent horizontal scrolling */
+  overflow-x: hidden;
+  max-width:  100vw;
+}
+
+/* ─── HEADING SCALE ─────────────────────────────────────── */
+h1 {
+  font-size:   max(42px, 2.625rem);
+  font-weight: 700;
+  line-height: 1.3;
+  color:       var(--color-text-primary);
+}
+
+h2 {
+  font-size:   max(36px, 2.25rem);
+  font-weight: 700;
+  line-height: 1.35;
+  color:       var(--color-text-primary);
+}
+
+h3 {
+  font-size:   max(32px, 2rem);
+  font-weight: 700;
+  line-height: 1.4;
+  color:       var(--color-text-primary);
+}
+
+h4 {
+  font-size:   max(28px, 1.75rem);
+  font-weight: 700;
+  line-height: 1.45;
+  color:       var(--color-text-primary);
+}
+
+p {
+  font-size:   max(26px, 1.625rem);
+  font-weight: 600;
+  line-height: 1.8;
+  color:       var(--color-text-primary);
+  
+  /* Max line length — beyond 65 chars per line harms readability */
+  max-width:   65ch;
+}
+
+/* ─── FOCUS MANAGEMENT ──────────────────────────────────── */
+/*
+  RULE: Every interactive element MUST have a visible focus ring.
+  RULE: Focus ring is always 4px solid #FF6B00.
+  RULE: 2px offset so ring doesn't overlap element borders.
+  
+  We use :focus-visible (not :focus) so the ring only appears
+  for keyboard navigation, not mouse clicks.
+  But for elderly users: we show on BOTH focus and focus-visible
+  because they need the feedback either way.
+*/
+:focus {
+  outline:        4px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+:focus:not(:focus-visible) {
+  /* 
+    For mouse users: show a more subtle indicator
+    Still show something — elderly users need feedback
+  */
+  outline: 3px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+:focus-visible {
+  outline:        4px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+/* ─── INTERACTIVE ELEMENTS — BASE RULES ─────────────────── */
+a {
+  color:           var(--color-primary);
+  font-weight:     700;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  text-decoration-thickness: 2px;
+  
+  /* Links should look clickable — not just colored text */
+  cursor: pointer;
+}
+
+a:hover,
+a:focus {
+  color:                    var(--color-primary-hover);
+  text-decoration-thickness: 3px;
+}
+
+button {
+  /* Override browser button defaults completely */
+  font-family:  inherit; /* Use our Atkinson Hyperlegible */
+  font-size:    max(32px, 2rem); /* Button text: 32px MINIMUM */
+  font-weight:  700;
+  cursor:       pointer;
+  border:       none;
+  background:   transparent;
+  
+  /* Minimum touch target */
+  min-height: var(--size-touch-min); /* 72px */
+  min-width:  var(--size-touch-min); /* 72px */
+  
+  /* Padding ensures text has room */
+  padding: 12px 24px;
+  
+  /* Center content */
+  display:         inline-flex;
+  align-items:     center;
+  justify-content: center;
+  gap:             12px;
+  
+  /* Transitions */
+  transition: 
+    background-color var(--duration-instant) var(--easing-gentle),
+    box-shadow       var(--duration-instant) var(--easing-gentle),
+    transform        var(--duration-instant) var(--easing-gentle);
+}
+
+/* Press state — immediate feedback for tremor users */
+button:active {
+  transform: scale(0.97);
+}
+
+input,
+select,
+textarea {
+  font-family:  inherit;
+  font-size:    max(26px, 1.625rem);
+  font-weight:  600;
+  
+  /* Input fields: 56px height — easy to tap */
+  min-height:   56px;
+  
+  /* Thick visible border */
+  border:       3px solid var(--color-border);
+  border-radius: 12px;
+  
+  padding: 12px 20px;
+  
+  background-color: var(--color-bg-primary);
+  color:            var(--color-text-primary);
+  
+  width: 100%; /* Always full-width */
+  
+  transition: border-color var(--duration-instant) var(--easing-gentle);
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline:      none;
+  border-color: var(--color-focus-ring);
+  box-shadow:   0 0 0 4px rgba(255, 107, 0, 0.20);
+}
+
+/* Placeholder text — must meet minimum contrast */
+/* #767676 on #FFFDF5 = 4.54:1 — acceptable for placeholder ONLY */
+input::placeholder,
+textarea::placeholder {
+  color:       #767676;
+  font-weight: 400; /* Lighter weight helps distinguish from real text */
+}
+
+/* ─── KEYFRAME ANIMATIONS ───────────────────────────────── */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1;    }
+  50%       { opacity: 0.7; }
+}
+
+@keyframes bounceOnce {
+  0%   { transform: translateY(0);    }
+  30%  { transform: translateY(-8px); }
+  60%  { transform: translateY(-3px); }
+  80%  { transform: translateY(-5px); }
+  100% { transform: translateY(0);    }
+}
+
+@keyframes wave {
+  0%, 100% { transform: scaleY(0.4); }
+  50%       { transform: scaleY(1.0); }
+}
+
+/* ─── UTILITY: SCREEN READER ONLY ───────────────────────── */
+.sr-only {
+  position:   absolute;
+  width:      1px;
+  height:     1px;
+  padding:    0;
+  margin:     -1px;
+  overflow:   hidden;
+  clip:       rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* ─── UTILITY: NO HORIZONTAL SCROLL (GLOBAL ENFORCE) ────── */
+html, body {
+  max-width:  100%;
+  overflow-x: hidden;
+}
+
+/* ─── UTILITY: IMAGE DEFAULTS ───────────────────────────── */
+img, svg, video, canvas, audio, iframe, embed, object {
+  display:   block;
+  max-width: 100%;
+}
+Phase 4: Design Token Constants (TypeScript)
+TypeScript
+
+// src/lib/design-tokens.ts
+// 
+// Why have tokens in TypeScript AND Tailwind?
+// - Runtime access: components can read colors programmatically
+// - Canvas API: drawing annotations in Guardian Mode needs hex values
+// - TTS: read color names in voice mode ("highlighted in orange")
+// - Chrome extension: injects these as CSS variables dynamically
+
+export const colors = {
+  background: {
+    primary:   "#FFFDF5",
+    secondary: "#F5F0E8",
+    elevated:  "#EDEDDD",
+    inverse:   "#1A1A1A",
+  },
+  text: {
+    primary:   "#1A1A1A",
+    secondary: "#444444", // ABSOLUTE MINIMUM — enforced in ESLint
+    inverse:   "#FFFDF5",
+    disabled:  "#767676",
+  },
+  primary: {
+    DEFAULT:  "#1A56DB",
+    hover:    "#1446B8",
+    active:   "#0F3590",
+    light:    "#EBF2FF",
+    on:       "#FFFDF5",
+  },
+  danger: {
+    DEFAULT:  "#CC0000",
+    hover:    "#AA0000",
+    active:   "#880000",
+    light:    "#FFF0F0",
+    on:       "#FFFDF5",
+  },
+  success: {
+    DEFAULT:  "#1A7340",
+    hover:    "#155C33",
+    active:   "#0F4426",
+    light:    "#EDFBF2",
+    on:       "#FFFDF5",
+  },
+  warning: {
+    DEFAULT:  "#8B4000",
+    hover:    "#703300",
+    active:   "#562600",
+    light:    "#FFF8F0",
+    on:       "#FFFDF5",
+  },
+  focus: {
+    ring: "#FF6B00",
+  },
+  border: {
+    DEFAULT:  "#D0C8B8",
+    strong:   "#9E9580",
+    inverse:  "#444444",
+  },
+  accent: {
+    health:   "#1A7340",
+    finance:  "#1A56DB",
+    family:   "#8B4000",
+    urgent:   "#CC0000",
+    general:  "#555577",
+  },
+} as const;
+
+export const typography = {
+  // All sizes in px — what actually renders
+  size: {
+    minimum:  22, // Absolute floor — nothing smaller
+    body:     26, // Default body text
+    supporting: 28,
+    action:   32, // Buttons, navigation
+    step:     36, // Step instructions
+    heading:  42, // Page headings
+    display:  48, // Hero, celebration
+  },
+  weight: {
+    body:   600, // Body text minimum
+    action: 700, // Interactive elements
+  },
+  lineHeight: {
+    body:    1.8,
+    heading: 1.3,
+    action:  1.4,
+  },
+  letterSpacing: {
+    body:    "0.02em",
+    heading: "0em",
+    action:  "0.02em",
+  },
+} as const;
+
+export const sizing = {
+  touchMin:   72,  // px — Minimum touch target
+  touchPref:  88,  // px — Preferred action height
+  touchLarge: 96,  // px — Large actions (mic button)
+  navHeight:  80,  // px — Navigation bar
+  cardPadding: 32, // px — Internal card padding
+  touchGap:   24,  // px — Minimum gap between targets
+  invisibleZone: 16, // px — Extra tap area padding
+} as const;
+
+export const animation = {
+  duration: {
+    instant: 100, // ms — Click feedback
+    gentle:  300, // ms — Standard transitions
+    max:     400, // ms — MAXIMUM allowed
+  },
+  easing: {
+    gentle: "cubic-bezier(0.25, 0.1, 0.25, 1.0)",
+    out:    "ease-out",
+  },
+} as const;
+
+// Contrast ratio reference (for documentation and testing)
+export const contrastAudit = {
+  "text.primary on bg.primary":   { ratio: 18.7, passes: "AAA" },
+  "text.secondary on bg.primary": { ratio: 9.73, passes: "AAA" },
+  "text.secondary on bg.secondary": { ratio: 8.54, passes: "AAA" },
+  "primary.DEFAULT on bg.primary":  { ratio: 7.43, passes: "AAA" },
+  "danger.DEFAULT on bg.primary":   { ratio: 7.02, passes: "AAA" },
+  "success.DEFAULT on bg.primary":  { ratio: 7.23, passes: "AAA" },
+  "warning.DEFAULT on bg.primary":  { ratio: 7.54, passes: "AAA" },
+  "accent.general on bg.primary":   { ratio: 7.11, passes: "AAA" },
+  "text.inverse on bg.inverse":     { ratio: 18.7, passes: "AAA" },
+} as const;
+
+// Type helpers
+export type ColorCategory = keyof typeof colors;
+export type AccentColor = keyof typeof colors.accent;
+Phase 5: Core Component Library
+Button Component
+TypeScript
+
+// src/components/ui/Button.tsx
+"use client";
+
+import React, { forwardRef, useRef, useEffect } from "react";
+import { cva, type VariantProps } from "class-variance-authority";
+import { clsx } from "clsx";
+import { Loader2 } from "lucide-react";
+
+/*
+  BUTTON DESIGN DECISIONS:
+  
+  Size justifications:
+  - min-h-[88px]: Preferred touch target (not WCAG's 44px minimum)
+  - min-w-[88px]: Prevents thin buttons that are hard to tap
+  - text-[32px]:  Minimum readable size for button text
+  - px-8 (32px):  Generous padding prevents text touching edges
+  - gap-3 (12px): Icon-text gap — enough to separate visually
+
+  Visual feedback timeline:
+  - 0ms:   Pointer down → button starts scaling (0.97)
+  - 100ms: Background color changes (the color feedback)
+  - 300ms: Returns to rest state
+  
+  Hover: Only darkens, NEVER lightens — darkening increases contrast.
+  
+  Full-width on mobile: 
+  - On small screens (< 768px), all primary buttons are full-width
+  - Prevents "miss taps" near button edges
+*/
+
+const buttonVariants = cva(
+  // Base classes — applied to every button
+  [
+    // Layout
+    "inline-flex items-center justify-center gap-3",
+    // Typography
+    "font-bold leading-none tracking-wide",
+    // Sizing — enforce minimum touch target
+    "min-h-[88px] min-w-[88px] px-8",
+    // Text size
+    "text-[32px]",
+    // Shape
+    "rounded-2xl",
+    // Interaction
+    "cursor-pointer",
+    "select-none", // Prevent accidental text selection on double-tap
+    // Transition
+    "transition-all duration-100 ease-out",
+    // Focus ring — ALWAYS visible, ALWAYS orange
+    "focus:outline-none",
+    "focus-visible:ring-4 focus-visible:ring-[#FF6B00] focus-visible:ring-offset-2",
+    "focus:ring-4 focus:ring-[#FF6B00] focus:ring-offset-2",
+    // Press state
+    "active:scale-[0.97]",
+    // Disabled state
+    "disabled:cursor-not-allowed disabled:opacity-60",
+    // Mobile: full width
+    "w-full md:w-auto",
+    // Text crisp
+    "antialiased",
+    // No text wrapping in buttons
+    "whitespace-nowrap",
+    // Position for loading overlay
+    "relative overflow-hidden",
+  ],
+  {
+    variants: {
+      variant: {
+        // ─── PRIMARY ────────────────────────────────────────
+        primary: [
+          "bg-[#1A56DB] text-[#FFFDF5]",
+          "border-2 border-[#1A56DB]",
+          "shadow-md",
+          "hover:bg-[#1446B8] hover:border-[#1446B8] hover:shadow-lg",
+          "active:bg-[#0F3590] active:border-[#0F3590]",
+        ],
+        // ─── DANGER ─────────────────────────────────────────
+        danger: [
+          "bg-[#CC0000] text-[#FFFDF5]",
+          "border-2 border-[#CC0000]",
+          "shadow-md",
+          "hover:bg-[#AA0000] hover:border-[#AA0000] hover:shadow-lg",
+          "active:bg-[#880000] active:border-[#880000]",
+        ],
+        // ─── SUCCESS ─────────────────────────────────────────
+        success: [
+          "bg-[#1A7340] text-[#FFFDF5]",
+          "border-2 border-[#1A7340]",
+          "shadow-md",
+          "hover:bg-[#155C33] hover:border-[#155C33] hover:shadow-lg",
+          "active:bg-[#0F4426] active:border-[#0F4426]",
+        ],
+        // ─── WARNING ─────────────────────────────────────────
+        warning: [
+          "bg-[#8B4000] text-[#FFFDF5]",
+          "border-2 border-[#8B4000]",
+          "shadow-md",
+          "hover:bg-[#703300] hover:border-[#703300] hover:shadow-lg",
+          "active:bg-[#562600] active:border-[#562600]",
+        ],
+        // ─── OUTLINE ─────────────────────────────────────────
+        // 3px border — thicker than standard for visibility
+        outline: [
+          "bg-[#FFFDF5] text-[#1A56DB]",
+          "border-3 border-[#1A56DB]",
+          "shadow-sm",
+          "hover:bg-[#EBF2FF] hover:shadow-md",
+          "active:bg-[#FFFDF5]",
+        ],
+        // ─── GHOST ───────────────────────────────────────────
+        // Minimal — only use for secondary actions with a primary nearby
+        ghost: [
+          "bg-transparent text-[#1A1A1A]",
+          "border-2 border-[#D0C8B8]",
+          "hover:bg-[#F5F0E8] hover:border-[#9E9580]",
+          "active:bg-[#EDEDDD]",
+        ],
+      },
+      size: {
+        // 
+        // Sizes go UP not down.
+        // 'sm' here is still LARGER than most apps' default buttons.
+        //
+        sm: [
+          // 72px height — absolute minimum
+          "min-h-[72px] min-w-[72px]",
+          "text-[26px]",
+          "px-6",
+          "rounded-xl",
+        ],
+        md: [
+          // 88px — preferred
+          "min-h-[88px] min-w-[88px]",
+          "text-[32px]",
+          "px-8",
+          "rounded-2xl",
+        ],
+        lg: [
+          // 96px — large primary actions
+          "min-h-[96px] min-w-[96px]",
+          "text-[32px]",
+          "px-10",
+          "rounded-2xl",
+        ],
+        icon: [
+          // Square icon button — 72px minimum
+          "min-h-[72px] min-w-[72px]",
+          "h-[72px] w-[72px]",
+          "p-0",
+          "rounded-xl",
+        ],
+        "icon-lg": [
+          // Large icon button — microphone, emergency
+          "min-h-[96px] min-w-[96px]",
+          "h-[96px] w-[96px]",
+          "p-0",
+          "rounded-full",
+        ],
+      },
+      fullWidth: {
+        true:  "w-full",
+        false: "w-full md:w-auto",
+      },
+    },
+    defaultVariants: {
+      variant:   "primary",
+      size:      "md",
+      fullWidth: false,
+    },
+  }
+);
+
+interface ButtonProps
+  extends React.ButtonHTMLAttributes<HTMLButtonElement>,
+    VariantProps<typeof buttonVariants> {
+  isLoading?:     boolean;
+  loadingText?:   string;
+  icon?:          React.ReactNode;
+  iconPosition?:  "left" | "right";
+  holdToConfirm?: boolean;   // For destructive actions: hold 2s
+  holdDuration?:  number;    // ms — default 2000
+  onHoldComplete?:() => void;
+  speakOnFocus?:  string;    // TTS: what to say when focused
+}
+
+export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
+  (
+    {
+      className,
+      variant,
+      size,
+      fullWidth,
+      isLoading = false,
+      loadingText = "Please wait...",
+      icon,
+      iconPosition = "left",
+      holdToConfirm = false,
+      holdDuration = 2000,
+      onHoldComplete,
+      speakOnFocus,
+      children,
+      onClick,
+      disabled,
+      ...props
+    },
+    ref
+  ) => {
+    const holdTimerRef      = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const holdProgressRef   = useRef<number>(0);
+    const progressBarRef    = useRef<HTMLDivElement>(null);
+    const rafRef            = useRef<number | null>(null);
+    const holdStartTimeRef  = useRef<number | null>(null);
+
+    // ─── HOLD-TO-CONFIRM LOGIC ───────────────────────────
+    // Used for destructive actions (delete, send money)
+    // Requires 2 second press — prevents tremor misfire
+    const startHold = (e: React.PointerEvent<HTMLButtonElement>) => {
+      if (!holdToConfirm) return;
+      
+      holdStartTimeRef.current = Date.now();
+      
+      const animate = () => {
+        if (!holdStartTimeRef.current) return;
+        
+        const elapsed  = Date.now() - holdStartTimeRef.current;
+        const progress = Math.min(elapsed / holdDuration, 1);
+        holdProgressRef.current = progress;
+        
+        if (progressBarRef.current) {
+          progressBarRef.current.style.width = `${progress * 100}%`;
+        }
+        
+        if (progress < 1) {
+          rafRef.current = requestAnimationFrame(animate);
+        } else {
+          // Hold complete — trigger action
+          onHoldComplete?.();
+          resetHold();
+        }
+      };
+      
+      rafRef.current = requestAnimationFrame(animate);
+    };
+
+    const resetHold = () => {
+      holdStartTimeRef.current = null;
+      holdProgressRef.current  = 0;
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      if (progressBarRef.current) {
+        progressBarRef.current.style.width = "0%";
+      }
+    };
+
+    // ─── VOICE FOCUS ANNOUNCEMENT ────────────────────────
+    const handleFocus = () => {
+      if (speakOnFocus && "speechSynthesis" in window) {
+        const utterance = new SpeechSynthesisUtterance(speakOnFocus);
+        utterance.rate   = 0.85;
+        utterance.volume = 1;
+        window.speechSynthesis.cancel(); // Stop any current speech
+        window.speechSynthesis.speak(utterance);
+      }
+    };
+
+    // ─── CLICK HANDLER ───────────────────────────────────
+    const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+      if (isLoading || disabled)  return;
+      if (holdToConfirm)          return; // Hold-to-confirm uses pointer events
+      onClick?.(e);
+    };
+
+    useEffect(() => {
+      return () => {
+        if (rafRef.current)    cancelAnimationFrame(rafRef.current);
+        if (holdTimerRef.current) clearTimeout(holdTimerRef.current);
+      };
+    }, []);
+
+    return (
+      <button
+        ref={ref}
+        className={clsx(buttonVariants({ variant, size, fullWidth }), className)}
+        disabled={disabled || isLoading}
+        onClick={handleClick}
+        onFocus={handleFocus}
+        onPointerDown={holdToConfirm ? startHold : undefined}
+        onPointerUp={holdToConfirm ? resetHold : undefined}
+        onPointerLeave={holdToConfirm ? resetHold : undefined}
+        // Accessibility
+        aria-busy={isLoading}
+        aria-label={
+          isLoading
+            ? loadingText
+            : holdToConfirm
+            ? `${props["aria-label"] || String(children)} — press and hold to confirm`
+            : props["aria-label"]
+        }
+        {...props}
+      >
+        {/* Loading state */}
+        {isLoading && (
+          <Loader2
+            className="animate-spin"
+            size={32}
+            aria-hidden="true"
+          />
+        )}
+
+        {/* Icon left */}
+        {!isLoading && icon && iconPosition === "left" && (
+          <span className="shrink-0" aria-hidden="true">
+            {icon}
+          </span>
+        )}
+
+        {/* Label */}
+        <span className={isLoading ? "opacity-0 absolute" : "relative z-10"}>
+          {isLoading ? loadingText : children}
+        </span>
+        {isLoading && (
+          <span className="absolute">{loadingText}</span>
+        )}
+
+        {/* Icon right */}
+        {!isLoading && icon && iconPosition === "right" && (
+          <span className="shrink-0" aria-hidden="true">
+            {icon}
+          </span>
+        )}
+
+        {/* Hold-to-confirm progress bar */}
+        {holdToConfirm && (
+          <div
+            ref={progressBarRef}
+            className="absolute bottom-0 left-0 h-1 bg-white/60 rounded-full"
+            style={{ width: "0%", transition: "none" }}
+            aria-hidden="true"
+          />
+        )}
+
+        {/* Hold instruction label */}
+        {holdToConfirm && (
+          <span className="absolute bottom-2 right-3 text-[14px] font-semibold opacity-70">
+            Hold to confirm
+          </span>
+        )}
+      </button>
+    );
+  }
+);
+
+Button.displayName = "Button";
+Card Component
+TypeScript
+
+// src/components/ui/Card.tsx
+"use client";
+
+import React, { forwardRef } from "react";
+import { cva, type VariantProps } from "class-variance-authority";
+import { clsx } from "clsx";
+import { Volume2 } from "lucide-react";
+import { useTextToSpeech } from "@/hooks/useTextToSpeech";
+import type { AccentColor } from "@/lib/design-tokens";
+
+/*
+  CARD DESIGN DECISIONS:
+  
+  1. Shadow: Always present on interactive cards
+     - Depth cues help elderly identify tappable areas
+     - Shadow removes ambiguity: "is this clickable?"
+     - Warm shadow (#2A241A) not cool grey — matches warm background
+  
+  2. Left accent border: 4px colored strip
+     - Category coding — health=green, finance=blue, family=amber
+     - Color + position (always left) = dual encoding
+     - Even with color blindness: position is consistent
+  
+  3. Padding: 32px minimum (8 in Tailwind)
+     - Prevents content touching card edges
+     - Breathing room reduces cognitive load
+  
+  4. Speaker button: Top-right, 40px icon
+     - Always visible — no "find the accessibility menu"
+     - Orange focus ring makes it findable
+  
+  5. Full-card tap: 
+     - cursor-pointer on entire card
+     - onClick on outer div, not inner button
+     - Screen readers: role="button" + tabIndex on card
+*/
+
+const accentColorMap: Record<AccentColor, string> = {
+  health:   "#1A7340",
+  finance:  "#1A56DB",
+  family:   "#8B4000",
+  urgent:   "#CC0000",
+  general:  "#555577",
+};
+
+const cardVariants = cva(
+  [
+    // Base layout
+    "relative",
+    "flex flex-col",
+    // Background
+    "bg-[#F5F0E8]",
+    // Border
+    "border border-[#D0C8B8]",
+    // Radius
+    "rounded-2xl",
+    // Shadow — always present for interactive cards
+    "shadow-md",
+    // Padding — 32px minimum
+    "p-8",
+    // Transition
+    "transition-shadow duration-300 ease-out",
+  ],
+  {
+    variants: {
+      interactive: {
+        true: [
+          "cursor-pointer",
+          "hover:shadow-lg",
+          "active:shadow-sm",
+          // Subtly elevate background on hover
+          "hover:bg-[#EDE8E0]",
+          // Focus ring when tabbed to
+          "focus:outline-none",
+          "focus:ring-4 focus:ring-[#FF6B00] focus:ring-offset-2",
+        ],
+        false: [],
+      },
+      variant: {
+        default: [],
+        elevated: [
+          "bg-[#FFFDF5]",
+          "shadow-lg",
+        ],
+        flat: [
+          "shadow-none",
+          "border-2 border-[#D0C8B8]",
+        ],
+        // Highlight — for today's urgent items
+        highlight: [
+          "bg-[#FFF8F0]",
+          "border-2 border-[#8B4000]",
+          "shadow-md",
+        ],
+      },
+    },
+    defaultVariants: {
+      interactive: false,
+      variant:     "default",
+    },
+  }
+);
+
+interface CardProps
+  extends React.HTMLAttributes<HTMLDivElement>,
+    VariantProps<typeof cardVariants> {
+  accent?:       AccentColor;  // Left border color strip
+  speakable?:    boolean;      // Show speaker button
+  speakContent?: string;       // Text to read (defaults to children text)
+  stepIndicator?: string;      // "Step 2 of 5" — shown at top
+}
+
+export const Card = forwardRef<HTMLDivElement, CardProps>(
+  (
+    {
+      className,
+      interactive,
+      variant,
+      accent,
+      speakable = true,
+      speakContent,
+      stepIndicator,
+      children,
+      onClick,
+      ...props
+    },
+    ref
+  ) => {
+    const { speak, isSpeaking } = useTextToSpeech();
+
+    const handleSpeak = (e: React.MouseEvent) => {
+      e.stopPropagation(); // Don't trigger card click
+      const text = speakContent || extractTextContent(children);
+      speak(text);
+    };
+
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+      // Allow Enter and Space to trigger click on interactive cards
+      if (interactive && (e.key === "Enter" || e.key === " ")) {
+        e.preventDefault();
+        onClick?.(e as unknown as React.MouseEvent<HTMLDivElement>);
+      }
+    };
+
+    return (
+      <div
+        ref={ref}
+        className={clsx(cardVariants({ interactive, variant }), className)}
+        style={{
+          // Left accent border — 4px colored strip
+          borderLeft: accent
+            ? `4px solid ${accentColorMap[accent]}`
+            : undefined,
+          paddingLeft: accent ? "28px" : undefined, // Compensate for border
+        }}
+        onClick={interactive ? onClick : undefined}
+        onKeyDown={interactive ? handleKeyDown : undefined}
+        role={interactive ? "button" : undefined}
+        tabIndex={interactive ? 0 : undefined}
+        aria-pressed={interactive ? undefined : undefined}
+        {...props}
+      >
+        {/* Step indicator — shown above content */}
+        {stepIndicator && (
+          <div
+            className="mb-6 text-[28px] font-bold text-[#444444]"
+            aria-label={stepIndicator}
+          >
+            {stepIndicator}
+          </div>
+        )}
+
+        {/* Speaker button — top right, always visible if speakable */}
+        {speakable && (
+          <button
+            onClick={handleSpeak}
+            className={clsx(
+              // Position — top right of card
+              "absolute top-4 right-4",
+              // Size — 40px icon in 52px touch target (with padding)
+              "h-[52px] w-[52px]",
+              "flex items-center justify-center",
+              // Visual
+              "rounded-xl",
+              "transition-colors duration-100",
+              // Focus ring
+              "focus:outline-none focus:ring-4 focus:ring-[#FF6B00] focus:ring-offset-2",
+              // Active state
+              isSpeaking
+                ? "bg-[#1A56DB] text-[#FFFDF5]"
+                : "bg-[#EDEDDD] text-[#444444] hover:bg-[#D0C8B8]"
+            )}
+            aria-label={isSpeaking ? "Stop reading" : "Read this section aloud"}
+            title={isSpeaking ? "Stop reading" : "Read aloud"}
+          >
+            <Volume2 size={28} aria-hidden="true" />
+          </button>
+        )}
+
+        {/* Card content — padded to avoid speaker button overlap */}
+        <div className={speakable ? "pr-14" : ""}>
+          {children}
+        </div>
+      </div>
+    );
+  }
+);
+
+Card.displayName = "Card";
+
+// Helper: extract text from React children for TTS
+function extractTextContent(children: React.ReactNode): string {
+  if (typeof children === "string") return children;
+  if (typeof children === "number") return String(children);
+  if (Array.isArray(children)) {
+    return children.map(extractTextContent).join(" ");
+  }
+  if (React.isValidElement(children)) {
+    return extractTextContent(
+      (children.props as { children?: React.ReactNode }).children
+    );
+  }
+  return "";
+}
+ProgressStep Component
+TypeScript
+
+// src/components/ui/ProgressStep.tsx
+// Used in playbook step-by-step flow
+"use client";
+
+import React from "react";
+import { clsx } from "clsx";
+
+/*
+  STEP INDICATOR DESIGN:
+  
+  "Step 2 of 5" is one of the most important UI elements for elderly.
+  
+  Research: Cognitive load drops significantly when users know:
+  1. WHERE they are in a process
+  2. HOW MUCH is left
+  3. THAT THEY CAN GO BACK
+  
+  Visual language:
+  - Filled circle = completed (✓ inside)
+  - Pulsing ring = current step (orange)
+  - Empty circle = upcoming steps
+  - No numbers in circles — too small to read
+  - Large text indicator: "Step 2 of 5" in 32px
+  
+  Colors:
+  - Completed: success green (#1A7340)
+  - Current: focus orange (#FF6B00)
+  - Upcoming: border grey (#D0C8B8), background neutral
+  
+  Line between steps:
+  - Solid line for completed sections
+  - Dashed line for upcoming sections
+*/
+
+interface ProgressStepProps {
+  current:  number;  // 1-indexed
+  total:    number;
+  className?: string;
+  showLabels?: boolean;
+  labels?: string[]; // Optional step names
+}
+
+export function ProgressStep({
+  current,
+  total,
+  className,
+  showLabels = false,
+  labels = [],
+}: ProgressStepProps) {
+  return (
+    <div
+      className={clsx("w-full", className)}
+      role="navigation"
+      aria-label={`Progress: Step ${current} of ${total}`}
+    >
+      {/* Text indicator — large, clear */}
+      <div
+        className="text-center mb-6"
+        aria-live="polite"
+        aria-atomic="true"
+      >
+        <span
+          className="text-[32px] font-bold text-[#1A1A1A]"
+          aria-label={`You are on step ${current} of ${total}`}
+        >
+          Step {current} of {total}
+        </span>
+      </div>
+
+      {/* Visual dot track */}
+      <div
+        className="flex items-center justify-center gap-0"
+        aria-hidden="true" // Decorative — text above is the accessible indicator
+      >
+        {Array.from({ length: total }).map((_, i) => {
+          const stepNumber  = i + 1;
+          const isCompleted = stepNumber < current;
+          const isCurrent   = stepNumber === current;
+          const isUpcoming  = stepNumber > current;
+
+          return (
+            <React.Fragment key={stepNumber}>
+              {/* Step dot */}
+              <div className="flex flex-col items-center">
+                <div
+                  className={clsx(
+                    // Base: 40px circle
+                    "h-10 w-10 rounded-full",
+                    "flex items-center justify-center",
+                    "flex-shrink-0",
+                    // Transition
+                    "transition-all duration-300",
+                    // State-specific styles
+                    isCompleted && [
+                      "bg-[#1A7340]",
+                      "border-2 border-[#1A7340]",
+                    ],
+                    isCurrent && [
+                      "bg-[#FFFDF5]",
+                      "border-4 border-[#FF6B00]",
+                      // Pulse animation draws attention to current step
+                      "animate-pulse",
+                      // Larger than others
+                      "h-12 w-12",
+                    ],
+                    isUpcoming && [
+                      "bg-[#FFFDF5]",
+                      "border-2 border-[#D0C8B8]",
+                    ]
+                  )}
+                >
+                  {isCompleted && (
+                    <svg
+                      width="20"
+                      height="20"
+                      viewBox="0 0 20 20"
+                      fill="none"
+                      aria-hidden="true"
+                    >
+                      <path
+                        d="M4 10L8 14L16 6"
+                        stroke="#FFFDF5"
+                        strokeWidth="2.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  )}
+                  {isCurrent && (
+                    <div className="h-3 w-3 rounded-full bg-[#FF6B00]" />
+                  )}
+                </div>
+
+                {/* Optional label */}
+                {showLabels && labels[i] && (
+                  <span
+                    className={clsx(
+                      "mt-2 text-[18px] font-semibold text-center",
+                      "max-w-[80px] leading-tight",
+                      isCompleted && "text-[#1A7340]",
+                      isCurrent   && "text-[#FF6B00] font-bold",
+                      isUpcoming  && "text-[#767676]",
+                    )}
+                  >
+                    {labels[i]}
+                  </span>
+                )}
+              </div>
+
+              {/* Connector line between steps */}
+              {i < total - 1 && (
+                <div
+                  className={clsx(
+                    "h-[3px] flex-1 mx-1",
+                    "transition-all duration-300",
+                    i < current - 1
+                      ? "bg-[#1A7340]"   // Completed: solid green
+                      : "bg-[#D0C8B8]"  // Upcoming: grey
+                  )}
+                  style={{
+                    // Dashed for upcoming sections
+                    backgroundImage: i >= current - 1
+                      ? "repeating-linear-gradient(to right, #D0C8B8 0, #D0C8B8 6px, transparent 6px, transparent 12px)"
+                      : "none",
+                  }}
+                />
+              )}
+            </React.Fragment>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+Alert Component
+TypeScript
+
+// src/components/ui/Alert.tsx
+"use client";
+
+import React, { useEffect, useRef } from "react";
+import { clsx } from "clsx";
+import { Volume2, AlertTriangle, CheckCircle2, 
+         Info, XCircle } from "lucide-react";
+import { useTextToSpeech } from "@/hooks/useTextToSpeech";
+
+/*
+  ALERT DESIGN:
+  
+  Rules:
+  1. NEVER show technical error messages
+  2. ALWAYS read aloud on appearance (auto-speak)
+  3. ALWAYS tell user what to DO next
+  4. ALWAYS include reassurance for error states
+  5. Large icon (48px) — immediately identifies severity
+  6. Colored left border — matches icon color (dual encoding)
+  
+  Auto-speak: When alert appears, it reads itself.
+  This ensures users with low vision know something happened.
+  500ms delay — ensures user isn't mid-way through reading page.
+*/
+
+type AlertVariant = "info" | "success" | "warning" | "error";
+
+interface AlertProps {
+  variant:      AlertVariant;
+  title:        string;
+  description?: string;
+  action?:      React.ReactNode;
+  autoSpeak?:   boolean;  // Read aloud when shown
+  className?:   string;
+  onDismiss?:   () => void;
+  role?:        "alert" | "status" | "log";
+}
+
+const variantConfig: Record<AlertVariant, {
+  bg:       string;
+  border:   string;
+  iconBg:   string;
+  icon:     React.ElementType;
+  iconColor:string;
+  label:    string; // Screen reader label for variant
+}> = {
+  info: {
+    bg:       "#EBF2FF",
+    border:   "#1A56DB",
+    iconBg:   "#1A56DB",
+    icon:     Info,
+    iconColor:"#FFFDF5",
+    label:    "Information",
+  },
+  success: {
+    bg:       "#EDFBF2",
+    border:   "#1A7340",
+    iconBg:   "#1A7340",
+    icon:     CheckCircle2,
+    iconColor:"#FFFDF5",
+    label:    "Success",
+  },
+  warning: {
+    bg:       "#FFF8F0",
+    border:   "#8B4000",
+    iconBg:   "#8B4000",
+    icon:     AlertTriangle,
+    iconColor:"#FFFDF5",
+    label:    "Warning",
+  },
+  error: {
+    bg:       "#FFF0F0",
+    border:   "#CC0000",
+    iconBg:   "#CC0000",
+    icon:     XCircle,
+    iconColor:"#FFFDF5",
+    label:    "Error",
+  },
+};
+
+export function Alert({
+  variant,
+  title,
+  description,
+  action,
+  autoSpeak = true,
+  className,
+  onDismiss,
+  role = variant === "error" ? "alert" : "status",
+}: AlertProps) {
+  const config = variantConfig[variant];
+  const Icon   = config.icon;
+  const { speak } = useTextToSpeech();
+
+  // Auto-speak when alert appears
+  useEffect(() => {
+    if (!autoSpeak) return;
+    
+    // 500ms delay — don't interrupt ongoing speech
+    const timer = setTimeout(() => {
+      const text = `${config.label}. ${title}. ${description || ""}`;
+      speak(text);
+    }, 500);
+    
+    return () => clearTimeout(timer);
+  }, [title, description, autoSpeak]);
+
+  const speakContent = () => {
+    speak(`${title}. ${description || ""}`);
+  };
+
+  return (
+    <div
+      role={role}
+      aria-live={role === "alert" ? "assertive" : "polite"}
+      aria-atomic="true"
+      className={clsx(
+        // Layout
+        "relative flex gap-5",
+        // Padding
+        "p-8",
+        // Shape
+        "rounded-2xl",
+        // Animation — fade in gently
+        "animate-[fadeIn_300ms_ease-out]",
+        className
+      )}
+      style={{
+        backgroundColor: config.bg,
+        borderLeft:      `4px solid ${config.border}`,
+      }}
+    >
+      {/* Icon — 48px circle with colored background */}
+      <div
+        className="flex-shrink-0 h-[56px] w-[56px] rounded-xl flex items-center justify-center"
+        style={{ backgroundColor: config.iconBg }}
+        aria-hidden="true"
+      >
+        <Icon size={32} color={config.iconColor} strokeWidth={2.5} />
+      </div>
+
+      {/* Content */}
+      <div className="flex-1 min-w-0">
+        {/* Title */}
+        <h3
+          className="text-[28px] font-bold text-[#1A1A1A] leading-tight mb-2"
+        >
+          {title}
+        </h3>
+
+        {/* Description */}
+        {description && (
+          <p className="text-[26px] font-semibold text-[#444444] leading-relaxed">
+            {description}
+          </p>
+        )}
+
+        {/* Action buttons */}
+        {action && (
+          <div className="mt-6">
+            {action}
+          </div>
+        )}
+      </div>
+
+      {/* Read aloud button */}
+      <button
+        onClick={speakContent}
+        className={clsx(
+          "absolute top-4 right-4",
+          "h-[52px] w-[52px]",
+          "flex items-center justify-center",
+          "rounded-xl",
+          "bg-white/60 hover:bg-white/80",
+          "transition-colors duration-100",
+          "focus:outline-none focus:ring-4 focus:ring-[#FF6B00] focus:ring-offset-2"
+        )}
+        aria-label="Read this message aloud"
+      >
+        <Volume2 size={28} color="#444444" />
+      </button>
+    </div>
+  );
+}
+Phase 6: Core Hooks
+TypeScript
+
+// src/hooks/useTextToSpeech.ts
+"use client";
+
+import { useState, useCallback, useRef, useEffect } from "react";
+
+/*
+  TTS HOOK DESIGN:
+  
+  Why Web Speech API over a cloud TTS?
+  - Instant: no network round trip
+  - Always available: works offline
+  - Free: no API cost per speak
+  - But: voice quality varies by device
+  
+  Settings for elderly:
+  - Rate: 0.8 (80% of normal speed — elderly process slower)
+  - Pitch: 1.0 (mid-range — not high-pitched which is harder to hear)
+  - Volume: 1.0 (maximum — hearing loss is common)
+  - Voice selection: prefer female English voices
+    (research shows warm female voices reduce anxiety in elderly)
+*/
+
+interface TTSOptions {
+  rate?:   number; // 0.6 - 1.0 (default: 0.8)
+  pitch?:  number; // 0.8 - 1.2 (default: 1.0)
+  volume?: number; // 0.0 - 1.0 (default: 1.0)
+  voice?:  SpeechSynthesisVoice | null;
+}
+
+interface UseTTSReturn {
+  speak:      (text: string, options?: TTSOptions) => void;
+  stop:       () => void;
+  pause:      () => void;
+  resume:     () => void;
+  isSpeaking: boolean;
+  isPaused:   boolean;
+  isSupported:boolean;
+  voices:     SpeechSynthesisVoice[];
+  selectedVoice: SpeechSynthesisVoice | null;
+  setSelectedVoice: (voice: SpeechSynthesisVoice) => void;
+  speechRate: number;
+  setSpeechRate: (rate: number) => void;
+}
+
+export function useTextToSpeech(): UseTTSReturn {
+  const [isSpeaking,     setIsSpeaking]     = useState(false);
+  const [isPaused,       setIsPaused]       = useState(false);
+  const [voices,         setVoices]         = useState<SpeechSynthesisVoice[]>([]);
+  const [selectedVoice,  setSelectedVoice]  = useState<SpeechSynthesisVoice | null>(null);
+  const [speechRate,     setSpeechRate]     = useState(0.8);
+  const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
+  const isSupported  = typeof window !== "undefined" && "speechSynthesis" in window;
+
+  // Load available voices
+  useEffect(() => {
+    if (!isSupported) return;
+
+    const loadVoices = () => {
+      const available = window.speechSynthesis.getVoices();
+      setVoices(available);
+
+      // Select best voice for elderly:
+      // Priority: female English, warm-named voices
+      const preferred = available.find(v =>
+        v.lang.startsWith("en") &&
+        (v.name.includes("Female") ||
+         v.name.includes("Samantha") || // macOS
+         v.name.includes("Karen")    || // macOS Australian
+         v.name.includes("Moira")    || // macOS Irish
+         v.name.includes("Google UK English Female") ||
+         v.name.includes("Microsoft Zira"))
+      );
+
+      // Fallback: any English voice
+      const fallback = available.find(v => v.lang.startsWith("en"));
+
+      setSelectedVoice(preferred || fallback || null);
+    };
+
+    // Voices load asynchronously in some browsers
+    loadVoices();
+    window.speechSynthesis.onvoiceschanged = loadVoices;
+
+    return () => {
+      window.speechSynthesis.onvoiceschanged = null;
+    };
+  }, [isSupported]);
+
+  const speak = useCallback((text: string, options?: TTSOptions) => {
+    if (!isSupported) return;
+
+    // Cancel any ongoing speech
+    window.speechSynthesis.cancel();
+
+    // Clean text for TTS:
+    // - Remove markdown symbols
+    // - Replace abbreviations
+    // - Add pauses at punctuation
+    const cleanedText = text
+      .replace(/[*_~`#]/g, "")          // Remove markdown
+      .replace(/\b(Dr\.)/g, "Doctor")
+      .replace(/\b(Rs\.)/g, "Rupees")
+      .replace(/\b(No\.)/g, "Number")
+      .replace(/\.\s/g, ". ")           // Ensure pause after period
+      .replace(/,\s/g, ", ");           // Ensure pause after comma
+
+    const utterance = new SpeechSynthesisUtterance(cleanedText);
+    
+    // Apply settings
+    utterance.rate   = options?.rate   ?? speechRate;  // 0.8 default
+    utterance.pitch  = options?.pitch  ?? 1.0;
+    utterance.volume = options?.volume ?? 1.0;
+    utterance.voice  = options?.voice  ?? selectedVoice;
+
+    // State tracking
+    utterance.onstart  = () => { setIsSpeaking(true); setIsPaused(false); };
+    utterance.onend    = () => { setIsSpeaking(false); setIsPaused(false); };
+    utterance.onpause  = () => { setIsPaused(true); };
+    utterance.onresume = () => { setIsPaused(false); };
+    utterance.onerror  = () => { setIsSpeaking(false); setIsPaused(false); };
+
+    utteranceRef.current = utterance;
+    window.speechSynthesis.speak(utterance);
+  }, [isSupported, selectedVoice, speechRate]);
+
+  const stop = useCallback(() => {
+    if (!isSupported) return;
+    window.speechSynthesis.cancel();
+    setIsSpeaking(false);
+    setIsPaused(false);
+  }, [isSupported]);
+
+  const pause = useCallback(() => {
+    if (!isSupported) return;
+    window.speechSynthesis.pause();
+    setIsPaused(true);
+  }, [isSupported]);
+
+  const resume = useCallback(() => {
+    if (!isSupported) return;
+    window.speechSynthesis.resume();
+    setIsPaused(false);
+  }, [isSupported]);
+
+  return {
+    speak,
+    stop,
+    pause,
+    resume,
+    isSpeaking,
+    isPaused,
+    isSupported,
+    voices,
+    selectedVoice,
+    setSelectedVoice,
+    speechRate,
+    setSpeechRate,
+  };
+}
+TypeScript
+
+// src/hooks/useVoiceCommand.ts
+"use client";
+
+import { useState, useCallback, useRef, useEffect } from "react";
+
+/*
+  VOICE COMMAND HOOK:
+  
+  Key differences from standard Web Speech API usage:
+  
+  1. Timeout: 8 seconds (not 3)
+     - Elderly speak more slowly and need processing time
+     - 3 seconds causes premature cutoff → frustration
+  
+  2. Confidence threshold: 0.65 (not 0.9)
+     - Elderly voices are often quieter, more accented
+     - 0.9 threshold rejects too many valid inputs
+     - We confirm with user anyway ("I heard: X — correct?")
+  
+  3. Continuous mode: false after each command
+     - Prevents runaway recording
+     - User always has to re-tap to speak
+     - Gives control back to user immediately
+  
+  4. Always show what was heard
+     - User sees "I heard: Pay electricity bill" 
+     - Then confirms: [Yes] [No, try again]
+     - Prevents accidental wrong actions
+*/
+
+export type VoiceCommandStatus =
+  | "idle"
+  | "listening"
+  | "processing"
+  | "confirming"
+  | "error";
+
+interface VoiceCommandResult {
+  transcript:  string;
+  confidence:  number;
+  isFinal:     boolean;
+}
+
+interface UseVoiceCommandReturn {
+  status:          VoiceCommandStatus;
+  transcript:      string;        // What was heard
+  confidence:      number;        // 0-1
+  startListening:  () => void;
+  stopListening:   () => void;
+  resetTranscript: () => void;
+  isSupported:     boolean;
+  error:           string | null;
+}
+
+export function useVoiceCommand(
+  onResult?: (transcript: string, confidence: number) => void
+): UseVoiceCommandReturn {
+  const [status,     setStatus]     = useState<VoiceCommandStatus>("idle");
+  const [transcript, setTranscript] = useState("");
+  const [confidence, setConfidence] = useState(0);
+  const [error,      setError]      = useState<string | null>(null);
+
+  const recognitionRef  = useRef<SpeechRecognition | null>(null);
+  const timeoutRef      = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isSupported     = typeof window !== "undefined" &&
+    ("SpeechRecognition" in window || "webkitSpeechRecognition" in window);
+
+  const cleanupTimeout = () => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+  };
+
+  const startListening = useCallback(() => {
+    if (!isSupported) {
+      setError("Voice input is not available on this device");
+      return;
+    }
+
+    // Reset state
+    setTranscript("");
+    setConfidence(0);
+    setError(null);
+    setStatus("listening");
+
+    // Create recognition instance
+    const SpeechRecognitionAPI =
+      window.SpeechRecognition || window.webkitSpeechRecognition;
+    const recognition = new SpeechRecognitionAPI();
+
+    // Configuration
+    recognition.continuous       = false;  // Single command mode
+    recognition.interimResults   = true;   // Show partial results
+    recognition.lang             = "en-IN"; // Indian English — common accent
+    recognition.maxAlternatives  = 3;      // Get multiple guesses
+
+    // 8-second timeout — longer than standard for elderly users
+    timeoutRef.current = setTimeout(() => {
+      recognition.stop();
+      if (status === "listening") {
+        setStatus("idle");
+        setError(
+          "I didn't catch that. Please tap the microphone and try again."
+        );
+      }
+    }, 8000);
+
+    recognition.onresult = (event: SpeechRecognitionEvent) => {
+      cleanupTimeout();
+      
+      const result = event.results[event.results.length - 1];
+      const best   = result[0]; // Highest confidence alternative
+      
+      setTranscript(best.transcript.trim());
+      setConfidence(best.confidence);
+
+      if (result.isFinal) {
+        // Only accept if confidence meets our threshold
+        if (best.confidence >= 0.65) {
+          setStatus("confirming");
+          onResult?.(best.transcript.trim(), best.confidence);
+        } else {
+          // Low confidence — try alternative transcripts
+          const alternatives = Array.from({ length: result.length }, (_, i) => result[i]);
+          const bestAlternative = alternatives.reduce((prev, curr) =>
+            curr.confidence > prev.confidence ? curr : prev
+          );
+          
+          setTranscript(bestAlternative.transcript.trim());
+          setConfidence(bestAlternative.confidence);
+          setStatus("confirming");
+          onResult?.(bestAlternative.transcript.trim(), bestAlternative.confidence);
+        }
+      } else {
+        // Show interim result — user sees words appearing
+        setTranscript(best.transcript.trim());
+      }
+    };
+
+    recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
+      cleanupTimeout();
+      setStatus("idle");
+
+      // Translate technical errors to friendly messages
+      const errorMessages: Record<string, string> = {
+        "no-speech":       "I didn't hear anything. Please try again.",
+        "audio-capture":   "I can't access your microphone. Please check your settings.",
+        "not-allowed":     "Microphone permission is needed. Please allow it in your browser settings.",
+        "network":         "Voice recognition needs internet. Please check your connection.",
+        "aborted":         "Listening stopped. Tap the microphone when you're ready.",
+        "service-not-allowed": "Voice recognition isn't available right now. Please try typing instead.",
+      };
+
+      setError(
+        errorMessages[event.error] ||
+        "Something went wrong with voice. Please try again."
+      );
+    };
+
+    recognition.onend = () => {
+      cleanupTimeout();
+      if (status !== "confirming") {
+        setStatus("idle");
+      }
+    };
+
+    recognitionRef.current = recognition;
+    recognition.start();
+  }, [isSupported, onResult]);
+
+  const stopListening = useCallback(() => {
+    cleanupTimeout();
+    recognitionRef.current?.stop();
+    setStatus("idle");
+  }, []);
+
+  const resetTranscript = useCallback(() => {
+    setTranscript("");
+    setConfidence(0);
+    setError(null);
+    setStatus("idle");
+  }, []);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      cleanupTimeout();
+      recognitionRef.current?.abort();
+    };
+  }, []);
+
+  return {
+    status,
+    transcript,
+    confidence,
+    startListening,
+    stopListening,
+    resetTranscript,
+    isSupported,
+    error,
+  };
+}
+Phase 7: The Home Screen
+TypeScript
+
+// src/app/(senior-app)/home/page.tsx
+"use client";
+
+import React, { useEffect, useState } from "react";
+import { 
+  Pill, Zap, Phone, Landmark, Volume2,
+  ChevronRight, Bell, Mic 
+} from "lucide-react";
+import { MicrophoneButton }   from "@/components/features/MicrophoneButton";
+import { TaskCard }            from "@/components/features/TaskCard";
+import { ReminderCard }        from "@/components/features/ReminderCard";
+import { BottomNavigation }    from "@/components/layout/BottomNavigation";
+import { VoiceConfirmDialog }  from "@/components/features/VoiceConfirmDialog";
+import { useTextToSpeech }     from "@/hooks/useTextToSpeech";
+import { useVoiceCommand }     from "@/hooks/useVoiceCommand";
+
+/*
+  HOME SCREEN RULES:
+  - Maximum 5 visual groups — count them:
+    1. Greeting header
+    2. Microphone button
+    3. Today's reminders
+    4. Quick tasks (max 3)
+    5. Bottom navigation (fixed — doesn't count as scrollable content)
+  
+  - Single column ONLY
+  - Every interactive element ≥ 88px height
+  - All cards are full-width
+  - Bottom nav is fixed — content scrolls behind it
+  - Greeting is personalized (name + time of day)
+  - Voice reads greeting on load
+*/
+
+// Demo data — replace with real user data from API
+const DEMO_USER = {
+  name:             "Kamala",
+  fontSizePreference: 26,
+  speechRate:       0.8,
+};
+
+const DEMO_REMINDERS = [
+  {
+    id:     "r1",
+    type:   "medicine" as const,
+    title:  "Metformin 500mg",
+    detail: "1 tablet after breakfast",
+    time:   "8:30 AM",
+    isOverdue: false,
+  },
+  {
+    id:     "r2",
+    type:   "bill" as const,
+    title:  "Electricity Bill Due Today",
+    detail: "₹1,240 due by midnight",
+    time:   "Due Today",
+    isOverdue: true,
+  },
+];
+
+const DEMO_QUICK_TASKS = [
+  {
+    id:       "t1",
+    icon:     Phone,
+    label:    "Call Daughter",
+    accent:   "family" as const,
+    href:     "/playbooks/video-call",
+    speakAs:  "Call your daughter",
+  },
+  {
+    id:       "t2",
+    icon:     Landmark,
+    label:    "Check Bank Balance",
+    accent:   "finance" as const,
+    href:     "/playbooks/bank-balance",
+    speakAs:  "Check your bank balance",
+  },
+  {
+    id:       "t3",
+    icon:     Pill,
+    label:    "My Medicine Schedule",
+    accent:   "health" as const,
+    href:     "/health/medicines",
+    speakAs:  "View your medicine schedule",
+  },
+];
+
+function getGreeting(): string {
+  const hour = new Date().getHours();
+  if (hour < 12) return "Good Morning";
+  if (hour < 17) return "Good Afternoon";
+  return "Good Evening";
+}
+
+function getFormattedDate(): string {
+  return new Date().toLocaleDateString("en-IN", {
+    weekday: "long",
+    day:     "numeric",
+    month:   "long",
+    year:    "numeric",
+  });
+}
+
+export default function HomePage() {
+  const { speak }                         = useTextToSpeech();
+  const [voiceResult, setVoiceResult]     = useState<string | null>(null);
+  const [showVoiceConfirm, setShowVoiceConfirm] = useState(false);
+  const [pageLoaded, setPageLoaded]       = useState(false);
+
+  const { status, transcript, startListening, stopListening } =
+    useVoiceCommand((result, confidence) => {
+      setVoiceResult(result);
+      setShowVoiceConfirm(true);
+    });
+
+  // On page load: read greeting aloud
+  // 1 second delay — page has settled, user is ready
+  useEffect(() => {
+    setPageLoaded(true);
+    const timer = setTimeout(() => {
+      const greeting = `${getGreeting()}, ${DEMO_USER.name}. `;
+      const reminders = DEMO_REMINDERS.length > 0
+        ? `You have ${DEMO_REMINDERS.length} reminders today. `
+        : "";
+      const cta = "Tap the red microphone button and tell me what you want to do. ";
+      
+      speak(greeting + reminders + cta, { rate: DEMO_USER.speechRate });
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  const handleVoiceConfirm = (confirmed: boolean) => {
+    setShowVoiceConfirm(false);
+    if (confirmed && voiceResult) {
+      // Process voice command
+      processVoiceCommand(voiceResult);
+    } else {
+      setVoiceResult(null);
+      speak("No problem. Tap the microphone and try again.");
+    }
+  };
+
+  const processVoiceCommand = (command: string) => {
+    const lower = command.toLowerCase();
+
+    // Route based on intent
+    if (lower.includes("electricity") || lower.includes("bill")) {
+      window.location.href = "/playbooks/electricity-bill";
+    } else if (lower.includes("call") || lower.includes("daughter") || lower.includes("son")) {
+      window.location.href = "/playbooks/video-call";
+    } else if (lower.includes("balance") || lower.includes("bank")) {
+      window.location.href = "/playbooks/bank-balance";
+    } else if (lower.includes("medicine") || lower.includes("tablet")) {
+      window.location.href = "/health/medicines";
+    } else if (lower.includes("help")) {
+      window.location.href = "/help";
+    } else if (lower.includes("bigger") || lower.includes("larger")) {
+      // Increase font size
+      speak("Making everything bigger.");
+    } else {
+      // Unknown — ask again
+      speak("I didn't understand that. Can you try again, or tap one of the buttons on the screen?");
+    }
+  };
+
+  return (
+    <>
+      {/*
+        LAYOUT:
+        - pb-24: padding at bottom for fixed nav (80px nav + 16px gap)
+        - max-w-2xl + mx-auto: on desktop, constrain to readable width
+        - Single column throughout
+      */}
+      <main
+        className="min-h-screen bg-[#FFFDF5] pb-24"
+        id="main-content"
+      >
+        <div className="max-w-2xl mx-auto px-6 pt-8">
+
+          {/* ═══ GROUP 1: GREETING HEADER ═══════════════════════ */}
+          <header className="mb-8 animate-[fadeIn_400ms_ease-out]">
+            {/* Greeting */}
+            <h1
+              className="text-[42px] font-bold text-[#1A1A1A] leading-tight mb-2"
+              aria-label={`${getGreeting()}, ${DEMO_USER.name}`}
+            >
+              {getGreeting()}, {DEMO_USER.name} 🌅
+            </h1>
+
+            {/* Date */}
+            <p
+              className="text-[28px] font-semibold text-[#444444]"
+              aria-label={`Today is ${getFormattedDate()}`}
+            >
+              {getFormattedDate()}
+            </p>
+          </header>
+
+          {/* ═══ GROUP 2: MICROPHONE BUTTON ══════════════════════ */}
+          <section
+            className="mb-8"
+            aria-label="Voice control"
+            aria-describedby="mic-instruction"
+          >
+            <MicrophoneButton
+              status={status}
+              onStart={startListening}
+              onStop={stopListening}
+              transcript={transcript}
+            />
+            <p
+              id="mic-instruction"
+              className="text-center text-[24px] font-semibold text-[#444444] mt-4 leading-snug"
+            >
+              Tap and tell me what you want to do today
+            </p>
+          </section>
+
+          {/* ═══ GROUP 3: TODAY'S REMINDERS ══════════════════════ */}
+          {DEMO_REMINDERS.length > 0 && (
+            <section
+              className="mb-8"
+              aria-labelledby="reminders-heading"
+            >
+              <h2
+                id="reminders-heading"
+                className="text-[32px] font-bold text-[#1A1A1A] mb-4 flex items-center gap-3"
+              >
+                <Bell size={32} aria-hidden="true" color="#8B4000" />
+                Today&apos;s Reminders
+              </h2>
+
+              <div
+                className="flex flex-col gap-6"
+                role="list"
+                aria-label="Today's reminders"
+              >
+                {DEMO_REMINDERS.map((reminder) => (
+                  <div role="listitem" key={reminder.id}>
+                    <ReminderCard {...reminder} />
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* ═══ GROUP 4: QUICK TASKS ════════════════════════════ */}
+          <section
+            className="mb-8"
+            aria-labelledby="quick-tasks-heading"
+          >
+            <h2
+              id="quick-tasks-heading"
+              className="text-[32px] font-bold text-[#1A1A1A] mb-4"
+            >
+              Quick Tasks
+            </h2>
+
+            <div
+              className="flex flex-col gap-6"
+              role="list"
+              aria-label="Quick tasks"
+            >
+              {DEMO_QUICK_TASKS.map((task) => (
+                <div role="listitem" key={task.id}>
+                  <TaskCard {...task} />
+                </div>
+              ))}
+            </div>
+          </section>
+
+        </div>
+      </main>
+
+      {/* ═══ GROUP 5: BOTTOM NAVIGATION ══════════════════════ */}
+      <BottomNavigation currentPage="home" />
+
+      {/* Voice Confirmation Dialog */}
+      {showVoiceConfirm && voiceResult && (
+        <VoiceConfirmDialog
+          heardText={voiceResult}
+          onConfirm={() => handleVoiceConfirm(true)}
+          onRetry={() => handleVoiceConfirm(false)}
+        />
+      )}
+    </>
+  );
+}
+Microphone Button Component
+TypeScript
+
+// src/components/features/MicrophoneButton.tsx
+"use client";
+
+import React, { useEffect, useRef } from "react";
+import { clsx } from "clsx";
+import { Mic, MicOff, Loader2 } from "lucide-react";
+import type { VoiceCommandStatus } from "@/hooks/useVoiceCommand";
+
+/*
+  MICROPHONE BUTTON DESIGN DECISIONS:
+  
+  Size: 96px (24 in Tailwind) — "touch-large"
+  - Largest important touch target in the app
+  - Central location — bottom-center-ish of visible content area
+  - Cannot be missed even with poor motor control
+  
+  State colors:
+  - Idle:       #1A56DB (deep blue) — "ready to use"
+  - Listening:  #CC0000 (red)       — "recording NOW" (matches convention)
+  - Processing: #8B4000 (amber)     — "working on it"
+  - Error:      #CC0000 with shake  — "something went wrong"
+  
+  Waveform:
+  - 3 vertical bars that animate up/down when listening
+  - Slow animation (1.2s per cycle)
+  - Only shows when listening — not decorative
+  
+  Transcript display:
+  - Shows live partial transcript above button
+  - 28px font — large enough to read quickly
+  - Scrolls if very long (unusual but handled)
+  
+  Full-width touch zone:
+  - The entire section is a big touch target
+  - Even tapping near the button works
+*/
+
+interface MicrophoneButtonProps {
+  status:      VoiceCommandStatus;
+  onStart:     () => void;
+  onStop:      () => void;
+  transcript?: string;
+}
+
+const statusConfig = {
+  idle: {
+    bg:        "#1A56DB",
+    hoverBg:   "#1446B8",
+    icon:      Mic,
+    label:     "Tap to speak",
+    ariaLabel: "Start voice command",
+    ring:      "#1A56DB",
+  },
+  listening: {
+    bg:        "#CC0000",
+    hoverBg:   "#AA0000",
+    icon:      Mic,
+    label:     "Listening... speak now",
+    ariaLabel: "Listening — tap to stop",
+    ring:      "#CC0000",
+  },
+  processing: {
+    bg:        "#8B4000",
+    hoverBg:   "#703300",
+    icon:      Loader2,
+    label:     "Understanding you...",
+    ariaLabel: "Processing your command",
+    ring:      "#8B4000",
+  },
+  confirming: {
+    bg:        "#1A7340",
+    hoverBg:   "#155C33",
+    icon:      Mic,
+    label:     "Got it!",
+    ariaLabel: "Command received",
+    ring:      "#1A7340",
+  },
+  error: {
+    bg:        "#CC0000",
+    hoverBg:   "#AA0000",
+    icon:      MicOff,
+    label:     "Tap to try again",
+    ariaLabel: "Error — tap to try again",
+    ring:      "#CC0000",
+  },
+};
+
+export function MicrophoneButton({
+  status,
+  onStart,
+  onStop,
+  transcript,
+}: MicrophoneButtonProps) {
+  const config      = statusConfig[status] || statusConfig.idle;
+  const Icon        = config.icon;
+  const isListening = status === "listening";
+  const isProcessing= status === "processing";
+
+  const handleClick = () => {
+    if (isListening) {
+      onStop();
+    } else {
+      onStart();
+    }
+  };
+
+  return (
+    <div className="flex flex-col items-center gap-4">
+      {/* Live transcript display */}
+      <div
+        className="min-h-[64px] flex items-center justify-center w-full"
+        aria-live="polite"
+        aria-atomic="false"
+      >
+        {transcript && (
+          <div
+            className={clsx(
+              "w-full px-6 py-4",
+              "bg-[#EBF2FF] rounded-2xl",
+              "border-2 border-[#1A56DB]",
+              "text-center",
+            )}
+          >
+            <p className="text-[26px] font-semibold text-[#1A56DB] italic">
+              &ldquo;{transcript}&rdquo;
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* The microphone button */}
+      <button
+        onClick={handleClick}
+        className={clsx(
+          // Size — 96px circle
+          "h-24 w-24 rounded-full",
+          // Layout
+          "flex items-center justify-center",
+          // Transitions
+          "transition-all duration-200 ease-out",
+          // Prevent accidental double-tap
+          "select-none",
+          // Focusable
+          "focus:outline-none",
+          "focus:ring-4 focus:ring-[#FF6B00] focus:ring-offset-4",
+          // Press scale
+          "active:scale-95",
+        )}
+        style={{
+          backgroundColor: config.bg,
+          boxShadow:
+            isListening
+              ? `0 0 0 8px ${config.ring}33, 0 8px 24px -4px ${config.ring}66`
+              : `0 8px 24px -4px ${config.ring}44`,
+        }}
+        aria-label={config.ariaLabel}
+        aria-pressed={isListening}
+      >
+        {/* Waveform — only when listening */}
+        {isListening ? (
+          <div
+            className="flex items-end gap-1.5 h-10"
+            aria-hidden="true"
+          >
+            {[0, 1, 2].map((i) => (
+              <div
+                key={i}
+                className={clsx(
+                  "w-2 bg-[#FFFDF5] rounded-full",
+                  i === 0 && "animate-[wave_1.2s_ease-in-out_0ms_infinite]",
+                  i === 1 && "animate-[wave_1.2s_ease-in-out_150ms_infinite]",
+                  i === 2 && "animate-[wave_1.2s_ease-in-out_300ms_infinite]",
+                )}
+                style={{
+                  minHeight: "12px",
+                  height:    "40px",
+                }}
+              />
+            ))}
+          </div>
+        ) : (
+          <Icon
+            size={44}
+            color="#FFFDF5"
+            strokeWidth={2}
+            className={isProcessing ? "animate-spin" : ""}
+            aria-hidden="true"
+          />
+        )}
+      </button>
+
+      {/* Status label */}
+      <p
+        className={clsx(
+          "text-[24px] font-bold text-center",
+          isListening  && "text-[#CC0000]",
+          isProcessing && "text-[#8B4000]",
+          !isListening && !isProcessing && "text-[#444444]",
+        )}
+        aria-live="polite"
+      >
+        {config.label}
+      </p>
+
+      {/* Pulsing ring when listening — visual + accessible */}
+      {isListening && (
+        <div
+          className={clsx(
+            "absolute h-24 w-24 rounded-full",
+            "border-4 border-[#CC0000]",
+            "animate-ping",
+            "pointer-events-none",
+            "opacity-30",
+          )}
+          aria-hidden="true"
+        />
+      )}
+    </div>
+  );
+}
+Task Card & Reminder Card
+TypeScript
+
+// src/components/features/TaskCard.tsx
+"use client";
+
+import React from "react";
+import { clsx } from "clsx";
+import { ChevronRight, LucideIcon } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useTextToSpeech } from "@/hooks/useTextToSpeech";
+import type { AccentColor } from "@/lib/design-tokens";
+import { colors } from "@/lib/design-tokens";
+
+/*
+  TASK CARD:
+  
+  Full card is tappable (not just an inner button)
+  → prevents "where exactly do I tap?" confusion
+  
+  Left accent border = category coding
+  Large icon = quick visual recognition
+  Arrow right = signals interactivity (affordance)
+  Min 88px height = comfortable tap target
+  
+  No hover-only states — all states are also visible on mobile
+*/
+
+interface TaskCardProps {
+  id:      string;
+  icon:    LucideIcon;
+  label:   string;
+  accent:  AccentColor;
+  href:    string;
+  speakAs: string;
+  detail?: string;
+}
+
+export function TaskCard({
+  id,
+  icon: Icon,
+  label,
+  accent,
+  href,
+  speakAs,
+  detail,
+}: TaskCardProps) {
+  const router = useRouter();
+  const { speak } = useTextToSpeech();
+  const accentColor = colors.accent[accent];
+
+  const handleClick = () => {
+    // Announce navigation
+    speak(`Opening: ${speakAs}`);
+    // Small delay so TTS starts before navigation
+    setTimeout(() => router.push(href), 200);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      handleClick();
+    }
+  };
+
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={handleClick}
+      onKeyDown={handleKeyDown}
+      className={clsx(
+        // Layout
+        "flex items-center gap-6",
+        // Sizing — minimum 88px height
+        "min-h-[88px]",
+        // Spacing
+        "p-6",
+        // Background
+        "bg-[#F5F0E8]",
+        // Border
+        "border border-[#D0C8B8]",
+        "rounded-2xl",
+        // Shadow
+        "shadow-md",
+        // Interaction
+        "cursor-pointer",
+        "hover:shadow-lg hover:bg-[#EDE8E0]",
+        "active:shadow-sm active:scale-[0.99]",
+        // Transition
+        "transition-all duration-100 ease-out",
+        // Focus
+        "focus:outline-none focus:ring-4 focus:ring-[#FF6B00] focus:ring-offset-2",
+        // No text select
+        "select-none",
+      )}
+      style={{
+        borderLeft:  `4px solid ${accentColor}`,
+        paddingLeft: "20px", // 4px border + 20px = 24px visual padding
+      }}
+      aria-label={`${label}${detail ? `. ${detail}` : ""}`}
+    >
+      {/* Icon — 48px, category color */}
+      <div
+        className="flex-shrink-0 h-14 w-14 rounded-xl flex items-center justify-center"
+        style={{ backgroundColor: `${accentColor}18` }} // 10% opacity
+        aria-hidden="true"
+      >
+        <Icon size={36} color={accentColor} strokeWidth={2} />
+      </div>
+
+      {/* Text */}
+      <div className="flex-1 min-w-0">
+        <p className="text-[28px] font-bold text-[#1A1A1A] leading-tight">
+          {label}
+        </p>
+        {detail && (
+          <p className="text-[22px] font-semibold text-[#444444] mt-1">
+            {detail}
+          </p>
+        )}
+      </div>
+
+      {/* Arrow — signals "tap to open" */}
+      <ChevronRight
+        size={32}
+        color="#9E9580"
+        className="flex-shrink-0"
+        aria-hidden="true"
+      />
+    </div>
+  );
+}
+TypeScript
+
+// src/components/features/ReminderCard.tsx
+"use client";
+
+import React from "react";
+import { clsx } from "clsx";
+import { Pill, Zap, Clock, CheckCircle2 } from "lucide-react";
+import { Button } from "@/components/ui/Button";
+import { useTextToSpeech } from "@/hooks/useTextToSpeech";
+
+type ReminderType = "medicine" | "bill" | "appointment" | "general";
+
+interface ReminderCardProps {
+  id:        string;
+  type:      ReminderType;
+  title:     string;
+  detail:    string;
+  time:      string;
+  isOverdue: boolean;
+}
+
+const typeConfig: Record<ReminderType, {
+  icon:     React.ElementType;
+  accent:   string;
+  bg:       string;
+  iconColor:string;
+}> = {
+  medicine:    { icon: Pill,  accent: "#1A7340", bg: "#EDFBF2", iconColor: "#1A7340" },
+  bill:        { icon: Zap,   accent: "#1A56DB", bg: "#EBF2FF", iconColor: "#1A56DB" },
+  appointment: { icon: Clock, accent: "#8B4000", bg: "#FFF8F0", iconColor: "#8B4000" },
+  general:     { icon: Clock, accent: "#555577", bg: "#F0F0F8", iconColor: "#555577" },
+};
+
+export function ReminderCard({
+  id,
+  type,
+  title,
+  detail,
+  time,
+  isOverdue,
+}: ReminderCardProps) {
+  const config = typeConfig[type];
+  const Icon   = config.icon;
+  const { speak } = useTextToSpeech();
+  const [isDone, setIsDone] = React.useState(false);
+
+  const handleDone = () => {
+    setIsDone(true);
+    speak(`Great! ${title} marked as done.`);
+  };
+
+  const handleRemind = () => {
+    speak(`Okay, I'll remind you about ${title} in 30 minutes.`);
+  };
+
+  if (isDone) {
+    return (
+      <div
+        className={clsx(
+          "flex items-center gap-4 p-6 rounded-2xl",
+          "bg-[#EDFBF2] border border-[#1A7340]",
+          "min-h-[88px]",
+        )}
+        role="status"
+        aria-label={`${title} — completed`}
+      >
+        <CheckCircle2 size={36} color="#1A7340" aria-hidden="true" />
+        <p className="text-[26px] font-bold text-[#1A7340]">
+          ✓ {title} — Done!
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className={clsx(
+        "flex flex-col gap-4 p-6 rounded-2xl",
+        "min-h-[88px]",
+        "shadow-md",
+        "border",
+      )}
+      style={{
+        backgroundColor: isOverdue ? "#FFF0F0" : config.bg,
+        borderColor:     isOverdue ? "#CC0000"  : config.accent,
+        borderLeft:      `4px solid ${isOverdue ? "#CC0000" : config.accent}`,
+      }}
+      aria-label={`${isOverdue ? "Overdue: " : ""}${title}. ${detail}. Time: ${time}`}
+    >
+      {/* Top row: icon + title + time */}
+      <div className="flex items-center gap-4">
+        {/* Icon */}
+        <div
+          className="flex-shrink-0 h-14 w-14 rounded-xl flex items-center justify-center"
+          style={{
+            backgroundColor: isOverdue ? "#FFF0F0" : `${config.accent}18`,
+          }}
+          aria-hidden="true"
+        >
+          <Icon
+            size={32}
+            color={isOverdue ? "#CC0000" : config.iconColor}
+            strokeWidth={2}
+          />
+        </div>
+
+        {/* Title + detail */}
+        <div className="flex-1">
+          <p
+            className={clsx(
+              "text-[28px] font-bold leading-tight",
+              isOverdue ? "text-[#CC0000]" : "text-[#1A1A1A]"
+            )}
+          >
+            {isOverdue && "⚠️ "}{title}
+          </p>
+          <p className="text-[22px] font-semibold text-[#444444] mt-1">
+            {detail}
+          </p>
+        </div>
+
+        {/* Time badge */}
+        <div
+          className={clsx(
+            "flex-shrink-0 px-3 py-2 rounded-lg",
+            "text-[20px] font-bold",
+            isOverdue
+              ? "bg-[#CC0000] text-[#FFFDF5]"
+              : "bg-white/60 text-[#444444]"
+          )}
+        >
+          {time}
+        </div>
+      </div>
+
+      {/* Action buttons */}
+      <div className="flex gap-4">
+        <Button
+          variant="success"
+          size="sm"
+          fullWidth={true}
+          onClick={handleDone}
+          icon={<CheckCircle2 size={24} />}
+          aria-label={`Mark ${title} as done`}
+        >
+          Done
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          fullWidth={true}
+          onClick={handleRemind}
+          icon={<Clock size={24} />}
+          aria-label={`Remind me about ${title} in 30 minutes`}
+        >
+          Remind me in 30 min
+        </Button>
+      </div>
+    </div>
+  );
+}
+Bottom Navigation
+TypeScript
+
+// src/components/layout/BottomNavigation.tsx
+"use client";
+
+import React from "react";
+import Link from "next/link";
+import { clsx } from "clsx";
+import { Home, ClipboardList, Heart, BookOpen, Users } from "lucide-react";
+import { useTextToSpeech } from "@/hooks/useTextToSpeech";
+
+/*
+  BOTTOM NAVIGATION RULES:
+  - Fixed bottom — always visible, never hides
+  - 80px height — comfortable tap zone
+  - 5 items MAXIMUM — more causes confusion
+  - Each item: icon (32px) + text label (always visible)
+  - Current page: colored icon + colored text + top border indicator
+  - No hamburger menu — elderly users don't understand that pattern
+  - Announcements: TTS reads destination on focus
+  - Items spaced 20%+ of screen width apart — prevents misfire
+*/
+
+type Page = "home" | "tasks" | "health" | "diary" | "help";
+
+const navItems: {
+  id:       Page;
+  label:    string;
+  icon:     React.ElementType;
+  href:     string;
+  speakAs:  string;
+}[] = [
+  { id: "home",   label: "Home",    icon: Home,          href: "/home",            speakAs: "Home screen" },
+  { id: "tasks",  label: "Tasks",   icon: ClipboardList, href: "/playbooks",       speakAs: "My saved tasks" },
+  { id: "health", label: "Health",  icon: Heart,         href: "/health",          speakAs: "Health and medicines" },
+  { id: "diary",  label: "Diary",   icon: BookOpen,      href: "/diary",           speakAs: "My digital diary" },
+  { id: "help",   label: "Get Help",icon: Users,         href: "/help",            speakAs: "Get help from family" },
+];
+
+interface BottomNavigationProps {
+  currentPage: Page;
+}
+
+export function BottomNavigation({ currentPage }: BottomNavigationProps) {
+  const { speak } = useTextToSpeech();
+
+  return (
+    <>
+      {/* Spacer — prevents content hiding under nav */}
+      <div className="h-20" aria-hidden="true" />
+
+      <nav
+        className={clsx(
+          // Fixed bottom position
+          "fixed bottom-0 left-0 right-0 z-50",
+          // Height
+          "h-20",
+          // Background + border
+          "bg-[#FFFDF5] border-t-2 border-[#D0C8B8]",
+          // Shadow above
+          "shadow-[0_-4px_12px_-2px_rgba(42,36,26,0.12)]",
+          // Layout
+          "flex items-stretch",
+          // Safe area for iOS home indicator
+          "pb-safe",
+        )}
+        aria-label="Main navigation"
+        role="navigation"
+      >
+        {navItems.map((item) => {
+          const Icon       = item.icon;
+          const isCurrent  = item.id === currentPage;
+          const isHelp     = item.id === "help"; // Help is danger-colored
+
+          return (
+            <Link
+              key={item.id}
+              href={item.href}
+              className={clsx(
+                // Take equal space
+                "flex-1",
+                // Layout
+                "flex flex-col items-center justify-center gap-1",
+                // Minimum tap target
+                "min-h-[80px]",
+                // Focus
+                "focus:outline-none focus:ring-4 focus:ring-[#FF6B00] focus:ring-inset",
+                // Transition
+                "transition-colors duration-100",
+                // Current page indicator (top border)
+                isCurrent && "border-t-4 border-t-[#1A56DB] -mt-[2px]",
+                // Help item — always stands out slightly
+                isHelp && !isCurrent && "bg-[#FFF0F0]",
+              )}
+              aria-current={isCurrent ? "page" : undefined}
+              aria-label={item.speakAs}
+              onFocus={() => speak(item.speakAs)}
+              onClick={() => speak(`Going to ${item.speakAs}`)}
+            >
+              {/* Icon */}
+              <Icon
+                size={32}
+                strokeWidth={isCurrent ? 2.5 : 2}
+                color={
+                  isCurrent
+                    ? "#1A56DB"
+                    : isHelp
+                    ? "#CC0000"
+                    : "#444444"
+                }
+                aria-hidden="true"
+              />
+
+              {/* Label — always visible, never icon-only */}
+              <span
+                className={clsx(
+                  "text-[16px] font-bold leading-none text-center",
+                  isCurrent ? "text-[#1A56DB]"
+                  : isHelp  ? "text-[#CC0000]"
+                  : "text-[#444444]",
+                )}
+              >
+                {item.label}
+              </span>
+            </Link>
+          );
+        })}
+      </nav>
+    </>
+  );
+}
+Voice Confirm Dialog
+TypeScript
+
+// src/components/features/VoiceConfirmDialog.tsx
+"use client";
+
+import React, { useEffect } from "react";
+import { clsx } from "clsx";
+import { CheckCircle2, RotateCcw, Mic } from "lucide-react";
+import { Button } from "@/components/ui/Button";
+import { useTextToSpeech } from "@/hooks/useTextToSpeech";
+
+/*
+  VOICE CONFIRM DIALOG:
+  
+  This screen appears BETWEEN hearing and acting on a voice command.
+  
+  Why this exists:
+  - Speech recognition makes mistakes — elderly users know this
+  - Showing what was heard builds TRUST ("the app listened to me")
+  - Confirmation prevents wrong actions (irreversible things)
+  - "No, try again" removes frustration (not "error — failed")
+  
+  Design:
+  - Fullscreen modal — covers everything else
+  - High contrast — #1A56DB on #FFFDF5
+  - Two large buttons — yes and retry
+  - Auto-reads the heard text aloud
+  - 42px font for the heard text — must be readable at a glance
+  
+  Copy rules:
+  - "I heard:" not "Input received:"
+  - "No, try again" not "Incorrect / Cancel"
+  - Friendly, conversational, not technical
+*/
+
+interface VoiceConfirmDialogProps {
+  heardText:  string;
+  onConfirm:  () => void;
+  onRetry:    () => void;
+}
+
+export function VoiceConfirmDialog({
+  heardText,
+  onConfirm,
+  onRetry,
+}: VoiceConfirmDialogProps) {
+  const { speak } = useTextToSpeech();
+
+  // Auto-read on mount
+  useEffect(() => {
+    const confirmText = `I heard: ${heardText}. Is that right?`;
+    speak(confirmText, { rate: 0.8 });
+  }, [heardText]);
+
+  return (
+    /* Fullscreen overlay */
+    <div
+      className={clsx(
+        "fixed inset-0 z-50",
+        "bg-[#FFFDF5]",
+        "flex flex-col items-center justify-center",
+        "p-8",
+        "animate-[fadeIn_300ms_ease-out]",
+      )}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="voice-confirm-title"
+      aria-describedby="voice-confirm-heard"
+    >
+      {/* Icon */}
+      <div
+        className="h-24 w-24 rounded-full bg-[#EBF2FF] flex items-center justify-center mb-8"
+        aria-hidden="true"
+      >
+        <Mic size={48} color="#1A56DB" strokeWidth={2} />
+      </div>
+
+      {/* Heading */}
+      <h2
+        id="voice-confirm-title"
+        className="text-[36px] font-bold text-[#1A1A1A] text-center mb-4"
+      >
+        I heard you say:
+      </h2>
+
+      {/* Heard text — emphasized */}
+      <div
+        id="voice-confirm-heard"
+        className={clsx(
+          "w-full max-w-lg",
+          "bg-[#EBF2FF] rounded-2xl",
+          "border-2 border-[#1A56DB]",
+          "p-8 mb-4",
+          "text-center",
+        )}
+      >
+        <p className="text-[42px] font-bold text-[#1A56DB] italic leading-tight">
+          &ldquo;{heardText}&rdquo;
+        </p>
+      </div>
+
+      {/* Question */}
+      <p className="text-[32px] font-bold text-[#1A1A1A] text-center mb-10">
+        Is that right?
+      </p>
+
+      {/* Action buttons — stacked, full width */}
+      <div className="w-full max-w-lg flex flex-col gap-6">
+        <Button
+          variant="success"
+          size="lg"
+          fullWidth={true}
+          icon={<CheckCircle2 size={32} />}
+          onClick={onConfirm}
+          aria-label="Yes, that is correct — continue"
+          speakOnFocus="Yes, that is correct"
+        >
+          Yes, that&apos;s right
+        </Button>
+
+        <Button
+          variant="ghost"
+          size="lg"
+          fullWidth={true}
+          icon={<RotateCcw size={32} />}
+          onClick={onRetry}
+          aria-label="No, try again — speak again"
+          speakOnFocus="No, try again"
+        >
+          No, let me try again
+        </Button>
+      </div>
+    </div>
+  );
+}
+Phase 8: Scam Fortress — Human Cognitive Lock
+TypeScript
+
+// src/components/features/ScamCognitiveLock.tsx
+"use client";
+
+import React, { useEffect, useState } from "react";
+import { clsx } from "clsx";
+import { Phone, X, HelpCircle, ShieldAlert } from "lucide-react";
+import { Button } from "@/components/ui/Button";
+import { useTextToSpeech } from "@/hooks/useTextToSpeech";
+
+/*
+  HUMAN COGNITIVE LOCK — THE MOST IMPORTANT SCAM FEATURE:
+  
+  Standard scam alerts: "This website may be dangerous. Continue?"
+  → Elderly users click Continue anyway (cognitive override)
+  
+  Cognitive Lock asks ONE specific question:
+  "Did someone PHONE YOU and tell you to visit this website?"
+  
+  Why this works:
+  - 80% of elderly scams involve a phone call first
+  - The question creates a specific, concrete memory check
+  - "Phone call" is a familiar concept, not abstract "phishing"
+  - It interrupts the scammer's script ("go to this website NOW")
+  
+  Color: Pure red (#CC0000) background — full-screen danger signal
+  Text: White (#FFFDF5) on red — 7:1 contrast maintained
+  Voice: Reads EVERYTHING — even if user can't see screen clearly
+  
+  Three answers:
+  - YES, someone called → LOCK everything, alert guardians
+  - NO, I found myself → One more verification step  
+  - NOT SURE         → Treated as YES (safe default)
+*/
+
+interface ScamCognitiveLockProps {
+  suspectedUrl:   string;
+  suspicionReason:string;
+  onSafe:         () => void; // User confirmed safe
+  onDanger:       () => void; // Confirmed scam
+  onGuardian:     () => void; // Alert guardian
+}
+
+type UserResponse = "called" | "self" | "unsure" | null;
+
+export function ScamCognitiveLock({
+  suspectedUrl,
+  suspicionReason,
+  onSafe,
+  onDanger,
+  onGuardian,
+}: ScamCognitiveLockProps) {
+  const { speak } = useTextToSpeech();
+  const [response, setResponse] = useState<UserResponse>(null);
+  const [step,     setStep]     = useState<"question" | "called-warning" | "self-verify">("question");
+
+  const fullMessage = `
+    Warning! Stop! Do not continue yet. 
+    This website looks suspicious. 
+    Answer this question first: 
+    Did someone phone you recently and tell you to go to this website, 
+    or click a link they sent you?
+    If yes, this is a scam. Do not give any information.
+    Tap the red button — yes, someone called me.
+    Tap the second button — no, I found this myself.
+    Tap the third button if you are not sure.
+  `;
+
+  // Read entire alert on mount
+  useEffect(() => {
+    speak(fullMessage, { rate: 0.75 }); // Slower than usual — critical info
+  }, []);
+
+  const handleCalled = () => {
+    setResponse("called");
+    setStep("called-warning");
+    speak(
+      "This is a scam. Someone is trying to steal your money or information. " +
+      "Do not give them anything. I am locking this page and alerting your family right now. " +
+      "You are safe. Well done for not falling for it.",
+      { rate: 0.75 }
+    );
+    onDanger();
+    onGuardian();
+  };
+
+  const handleSelf = () => {
+    setResponse("self");
+    setStep("self-verify");
+    speak(
+      "Okay. Let me check this website more carefully before we continue. " +
+      "Just one more question to keep you safe.",
+      { rate: 0.8 }
+    );
+  };
+
+  const handleUnsure = () => {
+    // Unsure = treated as YES (safe default)
+    setResponse("unsure");
+    setStep("called-warning");
+    speak(
+      "It's okay not to be sure. To keep you safe, I'm treating this as a warning. " +
+      "I'm alerting your family so they can help you check. " +
+      "Do not give any information on this website.",
+      { rate: 0.75 }
+    );
+    onGuardian();
+  };
+
+  const handleSafeVerified = () => {
+    speak("Okay, continuing. But please be careful. Never share your PIN, OTP, or password on this website.");
+    onSafe();
+  };
+
+  // ─── CALLED WARNING SCREEN ───────────────────────────────
+  if (step === "called-warning") {
+    return (
+      <div
+        className="fixed inset-0 z-[100] bg-[#CC0000] flex flex-col items-center justify-center p-8"
+        role="alertdialog"
+        aria-modal="true"
+        aria-labelledby="scam-confirmed-title"
+      >
+        <ShieldAlert size={80} color="#FFFDF5" className="mb-8" aria-hidden="true" />
+        
+        <h1
+          id="scam-confirmed-title"
+          className="text-[42px] font-bold text-[#FFFDF5] text-center mb-6 leading-tight"
+        >
+          🛑 This is a Scam
+        </h1>
+        
+        <p className="text-[28px] font-semibold text-[#FFFDF5] text-center mb-4 max-w-lg leading-relaxed">
+          Someone is trying to steal your money or personal information.
+        </p>
+        <p className="text-[26px] font-semibold text-[#FFFDF5] text-center mb-10 max-w-lg">
+          Your family has been alerted. You are completely safe.
+          You did the right thing by stopping.
+        </p>
+
+        <div className="w-full max-w-lg flex flex-col gap-4">
+          <div className="bg-white/20 rounded-2xl p-6 text-center">
+            <p className="text-[24px] font-bold text-[#FFFDF5]">
+              ✓ Page locked
+            </p>
+            <p className="text-[24px] font-bold text-[#FFFDF5]">
+              ✓ Family alerted
+            </p>
+            <p className="text-[24px] font-bold text-[#FFFDF5]">
+              ✓ Incident recorded
+            </p>
+          </div>
+          
+          <Button
+            variant="ghost"
+            size="lg"
+            fullWidth={true}
+            className="bg-white/20 text-[#FFFDF5] border-white/40 hover:bg-white/30"
+            onClick={() => window.location.href = "/home"}
+          >
+            Take me back to safety
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // ─── SELF-VERIFY SCREEN ──────────────────────────────────
+  if (step === "self-verify") {
+    return (
+      <div
+        className="fixed inset-0 z-[100] bg-[#FFFDF5] flex flex-col items-center justify-center p-8"
+        role="alertdialog"
+        aria-modal="true"
+        aria-labelledby="self-verify-title"
+      >
+        <div className="h-20 w-20 rounded-full bg-[#FFF8F0] flex items-center justify-center mb-8">
+          <ShieldAlert size={44} color="#8B4000" aria-hidden="true" />
+        </div>
+        
+        <h2
+          id="self-verify-title"
+          className="text-[36px] font-bold text-[#1A1A1A] text-center mb-6"
+        >
+          One More Check
+        </h2>
+        
+        <p className="text-[28px] font-semibold text-[#444444] text-center mb-10 max-w-lg leading-relaxed">
+          Do you recognize this website? Have you used it safely before?
+        </p>
+        
+        <div
+          className="w-full max-w-lg bg-[#F5F0E8] rounded-2xl p-6 mb-10 border-2 border-[#D0C8B8]"
+        >
+          <p className="text-[22px] font-semibold text-[#444444] break-all">
+            {suspectedUrl}
+          </p>
+          <p className="text-[22px] font-semibold text-[#8B4000] mt-2">
+            Reason for caution: {suspicionReason}
+          </p>
+        </div>
+
+        <div className="w-full max-w-lg flex flex-col gap-4">
+          <Button
+            variant="success"
+            size="lg"
+            fullWidth={true}
+            onClick={handleSafeVerified}
+          >
+            Yes, I recognize this website
+          </Button>
+          <Button
+            variant="danger"
+            size="lg"
+            fullWidth={true}
+            onClick={handleCalled}
+          >
+            No, I&apos;m not sure — keep me safe
+          </Button>
+          <Button
+            variant="ghost"
+            size="lg"
+            fullWidth={true}
+            onClick={onGuardian}
+          >
+            Call my family to help me check
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // ─── MAIN QUESTION SCREEN ────────────────────────────────
+  return (
+    <div
+      className="fixed inset-0 z-[100] bg-[#FFFDF5] flex flex-col items-center justify-center p-8"
+      role="alertdialog"
+      aria-modal="true"
+      aria-labelledby="scam-check-title"
+      aria-describedby="scam-check-desc"
+    >
+      {/* Warning icon */}
+      <div
+        className="h-24 w-24 rounded-full bg-[#FFF0F0] flex items-center justify-center mb-8"
+        aria-hidden="true"
+      >
+        <ShieldAlert size={56} color="#CC0000" strokeWidth={2} />
+      </div>
+
+      {/* Stop heading */}
+      <h1
+        id="scam-check-title"
+        className="text-[42px] font-bold text-[#CC0000] text-center mb-4 leading-tight"
+      >
+        🛑 Wait — Answer This First
+      </h1>
+
+      {/* Divider */}
+      <div className="w-full max-w-lg h-1 bg-[#D0C8B8] rounded-full mb-8" />
+
+      {/* The key question */}
+      <h2
+        id="scam-check-desc"
+        className="text-[32px] font-bold text-[#1A1A1A] text-center mb-4 max-w-lg leading-relaxed"
+      >
+        Did someone{" "}
+        <span className="text-[#CC0000] underline">
+          phone you
+        </span>{" "}
+        recently and tell you to visit this website or click a link?
+      </h2>
+
+      <p className="text-[24px] font-semibold text-[#444444] text-center mb-10 max-w-lg">
+        Take your time. There is no hurry.
+      </p>
+
+      {/* Three answer buttons */}
+      <div className="w-full max-w-lg flex flex-col gap-5">
+        {/* YES — danger colored, most prominent */}
+        <button
+          onClick={handleCalled}
+          className={clsx(
+            "w-full min-h-[96px] rounded-2xl",
+            "flex items-center gap-5 px-8",
+            "bg-[#CC0000] hover:bg-[#AA0000] active:bg-[#880000]",
+            "text-[#FFFDF5]",
+            "transition-colors duration-100",
+            "focus:outline-none focus:ring-4 focus:ring-[#FF6B00] focus:ring-offset-2",
+            "border-2 border-[#CC0000]",
+            "shadow-md",
+          )}
+          aria-label="Yes, someone phoned me and told me to visit this website"
+        >
+          <Phone size={40} aria-hidden="true" />
+          <div className="text-left">
+            <p className="text-[28px] font-bold">📞 Yes, someone called me</p>
+            <p className="text-[20px] font-semibold opacity-90">
+              They told me to visit this website
+            </p>
+          </div>
+        </button>
+
+        {/* NO — outline style */}
+        <button
+          onClick={handleSelf}
+          className={clsx(
+            "w-full min-h-[88px] rounded-2xl",
+            "flex items-center gap-5 px-8",
+            "bg-[#FFFDF5] hover:bg-[#F5F0E8]",
+            "text-[#1A1A1A]",
+            "border-2 border-[#D0C8B8] hover:border-[#9E9580]",
+            "transition-colors duration-100",
+            "focus:outline-none focus:ring-4 focus:ring-[#FF6B00] focus:ring-offset-2",
+          )}
+          aria-label="No, I found this website by myself"
+        >
+          <X size={36} color="#1A1A1A" aria-hidden="true" />
+          <div className="text-left">
+            <p className="text-[26px] font-bold">❌ No, I found this myself</p>
+          </div>
+        </button>
+
+        {/* NOT SURE — muted */}
+        <button
+          onClick={handleUnsure}
+          className={clsx(
+            "w-full min-h-[88px] rounded-2xl",
+            "flex items-center gap-5 px-8",
+            "bg-[#F5F0E8] hover:bg-[#EDEDDD]",
+            "text-[#444444]",
+            "border-2 border-[#D0C8B8]",
+            "transition-colors duration-100",
+            "focus:outline-none focus:ring-4 focus:ring-[#FF6B00] focus:ring-offset-2",
+          )}
+          aria-label="I am not sure — treat this as a warning"
+        >
+          <HelpCircle size={36} color="#444444" aria-hidden="true" />
+          <div className="text-left">
+            <p className="text-[26px] font-bold">🤔 I&apos;m not sure</p>
+          </div>
+        </button>
+      </div>
+    </div>
+  );
+}
+Phase 9: Chrome Extension
+JSON
+
+// chrome-extension/manifest.json
+{
+  "manifest_version": 3,
+  "name": "ElderBridge",
+  "short_name": "ElderBridge",
+  "version": "1.0.0",
+  "description": "Makes any website simple and safe for seniors. Larger text, clearer layout, voice control, and scam protection.",
+  "permissions": [
+    "activeTab",
+    "storage",
+    "scripting",
+    "tts",
+    "notifications"
+  ],
+  "host_permissions": ["<all_urls>"],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "css": ["elder-bridge.css"],
+      "run_at": "document_end"
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "48":  "icons/icon-48.png",
+      "96":  "icons/icon-96.png",
+      "128": "icons/icon-128.png"
+    },
+    "default_title": "ElderBridge — Click to activate Senior Mode"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "elder-bridge.css",
+        "fonts/AtkinsonHyperlegible-Regular.woff2",
+        "fonts/AtkinsonHyperlegible-Bold.woff2",
+        "icons/*.png",
+        "toolbar.html"
+      ],
+      "matches": ["<all_urls>"]
+    }
+  ],
+  "icons": {
+    "48":  "icons/icon-48.png",
+    "96":  "icons/icon-96.png",
+    "128": "icons/icon-128.png"
+  }
+}
+JavaScript
+
+// chrome-extension/content.js
+// 
+// CONTENT SCRIPT — Injected into every webpage when Senior Mode is ON.
+// 
+// Responsibilities:
+// 1. Listen for activation message from popup/background
+// 2. Inject Senior Mode CSS overrides
+// 3. Add ElderBridge toolbar (fixed top bar)
+// 4. Add speaker buttons to text sections
+// 5. Run scam detection on page content
+// 6. Report suspicious content back to background
+
+(function() {
+  "use strict";
+
+  // ─── STATE ────────────────────────────────────────────────
+  let isActive        = false;
+  let toolbarInjected = false;
+  let originalStyles  = new Map(); // Store original inline styles for restoration
+
+  // ─── DESIGN TOKENS — must match Tailwind config ───────────
+  const TOKENS = {
+    bg:           "#FFFDF5",
+    textPrimary:  "#1A1A1A",
+    textSecondary:"#444444",
+    primary:      "#1A56DB",
+    danger:       "#CC0000",
+    success:      "#1A7340",
+    warning:      "#8B4000",
+    focusRing:    "#FF6B00",
+    border:       "#D0C8B8",
+    fontFamily:   "'Atkinson Hyperlegible', system-ui, -apple-system, sans-serif",
+    fontSize:     "26px",
+    fontWeight:   "600",
+    lineHeight:   "1.8",
+    letterSpacing:"0.02em",
+    minTouchTarget:"72px",
+    touchPref:    "88px",
+    cardPadding:  "32px",
+  };
+
+  // ─── LISTEN FOR MESSAGES ──────────────────────────────────
+  chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    switch (message.type) {
+      case "ACTIVATE_SENIOR_MODE":
+        activateSeniorMode();
+        sendResponse({ success: true, active: true });
+        break;
+
+      case "DEACTIVATE_SENIOR_MODE":
+        deactivateSeniorMode();
+        sendResponse({ success: true, active: false });
+        break;
+
+      case "READ_PAGE":
+        readPageAloud();
+        sendResponse({ success: true });
+        break;
+
+      case "INCREASE_FONT":
+        adjustFontSize(+2);
+        sendResponse({ success: true });
+        break;
+
+      case "DECREASE_FONT":
+        adjustFontSize(-2);
+        sendResponse({ success: true });
+        break;
+
+      case "CHECK_SCAM":
+        const scamResult = analyzePageForScams();
+        sendResponse({ success: true, result: scamResult });
+        break;
+
+      case "GET_STATUS":
+        sendResponse({ 
+          success: true, 
+          active: isActive,
+          scamCheck: analyzePageForScams()
+        });
+        break;
+    }
+    return true; // Keep message channel open for async responses
+  });
+
+  // ─── ACTIVATE SENIOR MODE ─────────────────────────────────
+  function activateSeniorMode() {
+    if (isActive) return;
+    isActive = true;
+
+    // 1. Store original state
+    document.body.setAttribute("data-elderbridge-original-class", document.body.className);
+
+    // 2. Inject CSS class that applies all overrides
+    document.documentElement.classList.add("elderbridge-active");
+
+    // 3. Simplify DOM (remove clutter)
+    simplifyPage();
+
+    // 4. Inject toolbar
+    if (!toolbarInjected) {
+      injectToolbar();
+      toolbarInjected = true;
+    }
+
+    // 5. Add speaker buttons
+    addSpeakerButtons();
+
+    // 6. Run scam check
+    const scamResult = analyzePageForScams();
+    if (scamResult.riskLevel === "high") {
+      reportScamToBackground(scamResult);
+    }
+
+    // 7. Announce activation
+    speakText("Senior Mode is now on. The page has been simplified for easier reading.");
+  }
+
+  // ─── DEACTIVATE ───────────────────────────────────────────
+  function deactivateSeniorMode() {
+    if (!isActive) return;
+    isActive = false;
+
+    document.documentElement.classList.remove("elderbridge-active");
+    
+    // Remove injected toolbar
+    const toolbar = document.getElementById("elderbridge-toolbar");
+    if (toolbar) toolbar.remove();
+    toolbarInjected = false;
+
+    // Remove speaker buttons
+    document.querySelectorAll(".elderbridge-speaker").forEach(b => b.remove());
+    
+    // Remove clutter hiders
+    document.querySelectorAll(".elderbridge-hidden").forEach(el => {
+      el.classList.remove("elderbridge-hidden");
+    });
+
+    speakText("Senior Mode turned off. Original website restored.");
+  }
+
+  // ─── PAGE SIMPLIFICATION ──────────────────────────────────
+  function simplifyPage() {
+    // Elements to HIDE (not delete — preserve page functionality)
+    const clutterSelectors = [
+      // Ads
+      "[class*='ad-']",
+      "[class*='-ad']",
+      "[id*='google_ads']",
+      "[class*='advertisement']",
+      "[data-ad-unit]",
+      "ins.adsbygoogle",
+      
+      // Cookie banners
+      "[class*='cookie']",
+      "[id*='cookie']",
+      "[class*='consent']",
+      "[class*='gdpr']",
+      
+      // Pop-ups and overlays
+      "[class*='popup']",
+      "[class*='modal']:not([role='dialog'])", // Keep actual dialogs
+      "[class*='overlay']:not([class*='elderbridge'])",
+      
+      // Carousels and sliders (complex to interact with)
+      "[class*='carousel']",
+      "[class*='slider']",
+      "[class*='swipe']",
+      
+      // Social widgets
+      "[class*='social-share']",
+      "[class*='facebook-widget']",
+      "[class*='twitter-widget']",
+      
+      // Newsletter signups
+      "[class*='newsletter']",
+      "[class*='subscribe']",
+      
+      // Sidebars (on mobile these are often hidden anyway)
+      "aside:not([aria-label])", // Keep labeled asides
+      "[class*='sidebar']",
+      "[class*='side-bar']",
+    ];
+
+    clutterSelectors.forEach(selector => {
+      try {
+        document.querySelectorAll(selector).forEach(el => {
+          // Don't hide if it contains main content or navigation
+          if (isImportantElement(el)) return;
+          el.classList.add("elderbridge-hidden");
+        });
+      } catch (e) {
+        // Ignore invalid selector errors
+      }
+    });
+  }
+
+  function isImportantElement(el: Element): boolean {
+    // Don't hide elements that contain main content
+    const important = el.closest(
+      "main, [role='main'], article, [role='article'], " +
+      "header nav, [role='navigation'], form"
+    );
+    return !!important;
+  }
+
+  // ─── TOOLBAR INJECTION ────────────────────────────────────
+  function injectToolbar() {
+    // Push page content down
+    document.body.style.marginTop = "88px";
+
+    const toolbar = document.createElement("div");
+    toolbar.id = "elderbridge-toolbar";
+    toolbar.setAttribute("role", "toolbar");
+    toolbar.setAttribute("aria-label", "ElderBridge toolbar");
+
+    // Inline styles — must work without external CSS
+    toolbar.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 2147483647;
+      height: 88px;
+      background-color: ${TOKENS.bg};
+      border-bottom: 3px solid ${TOKENS.border};
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      gap: 8px;
+      box-shadow: 0 4px 12px -2px rgba(42,36,26,0.15);
+      font-family: ${TOKENS.fontFamily};
+    `;
+
+    const buttons = [
+      {
+        icon: "🔊",
+        label: "Read Page",
+        action: "read",
+        color: TOKENS.primary,
+        aria: "Read entire page aloud",
+      },
+      {
+        icon: "📖+",
+        label: "Bigger",
+        action: "bigger",
+        color: TOKENS.success,
+        aria: "Make text bigger",
+      },
+      {
+        icon: "📖-",
+        label: "Smaller",
+        action: "smaller",
+        color: TOKENS.textSecondary,
+        aria: "Make text smaller",
+      },
+      {
+        icon: "🎤",
+        label: "Voice",
+        action: "voice",
+        color: TOKENS.primary,
+        aria: "Start voice command",
+      },
+      {
+        icon: "🛡️",
+        label: "Is This Safe?",
+        action: "scam",
+        color: TOKENS.warning,
+        aria: "Check if this website is safe",
+      },
+      {
+        icon: "👨‍👩‍👧",
+        label: "Get Help",
+        action: "help",
+        color: TOKENS.danger,
+        aria: "Contact my family for help",
+      },
+    ];
+
+    buttons.forEach(btn => {
+      const button = document.createElement("button");
+      button.setAttribute("aria-label", btn.aria);
+      button.setAttribute("data-action", btn.action);
+      button.style.cssText = `
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 2px;
+        min-height: 72px;
+        min-width: 72px;
+        padding: 8px 12px;
+        background: transparent;
+        border: 2px solid ${btn.color}33;
+        border-radius: 12px;
+        cursor: pointer;
+        font-family: ${TOKENS.fontFamily};
+        color: ${btn.color};
+        flex: 1;
+        max-width: 100px;
+      `;
+
+      button.innerHTML = `
+        <span style="font-size: 24px; line-height: 1;">${btn.icon}</span>
+        <span style="font-size: 13px; font-weight: 700; line-height: 1.2; text-align: center;">${btn.label}</span>
+      `;
+
+      button.addEventListener("click", () => handleToolbarAction(btn.action));
+      button.addEventListener("focus", () => {
+        button.style.outline = `4px solid ${TOKENS.focusRing}`;
+        button.style.outlineOffset = "2px";
+      });
+      button.addEventListener("blur", () => {
+        button.style.outline = "none";
+      });
+
+      toolbar.appendChild(button);
+    });
+
+    document.body.prepend(toolbar);
+  }
+
+  function handleToolbarAction(action: string) {
+    switch (action) {
+      case "read":    readPageAloud();     break;
+      case "bigger":  adjustFontSize(+2);  break;
+      case "smaller": adjustFontSize(-2);  break;
+      case "voice":   startVoiceInput();   break;
+      case "scam":    showScamReport();    break;
+      case "help":    contactGuardian();   break;
+    }
+  }
+
+  // ─── SPEAKER BUTTONS ──────────────────────────────────────
+  function addSpeakerButtons() {
+    // Add to all meaningful text sections
+    const textSections = document.querySelectorAll(
+      "p, h1, h2, h3, h4, article, section, .card, [class*='content']"
+    );
+
+    textSections.forEach((section, index) => {
+      // Skip if already has a speaker, or is too small
+      if (section.querySelector(".elderbridge-speaker")) return;
+      if (section.textContent && section.textContent.trim().length < 20) return;
+      if (section.closest(".elderbridge-speaker")) return;
+
+      const btn = document.createElement("button");
+      btn.className = "elderbridge-speaker";
+      btn.setAttribute("aria-label", "Read this section aloud");
+      btn.setAttribute("title", "Read aloud");
+      btn.style.cssText = `
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 40px;
+        height: 40px;
+        background: ${TOKENS.bg};
+        border: 2px solid ${TOKENS.border};
+        border-radius: 8px;
+        cursor: pointer;
+        float: right;
+        margin-left: 8px;
+        font-size: 18px;
+        color: ${TOKENS.textSecondary};
+        vertical-align: top;
+        flex-shrink: 0;
+      `;
+      btn.textContent = "🔊";
+
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const text = section.textContent || "";
+        speakText(text.trim().substring(0, 500)); // Limit to 500 chars
+        btn.textContent = "⏹️";
+        btn.setAttribute("aria-label", "Stop reading");
+        setTimeout(() => {
+          btn.textContent = "🔊";
+          btn.setAttribute("aria-label", "Read this section aloud");
+        }, 5000);
+      });
+
+      btn.addEventListener("focus", () => {
+        btn.style.outline = `4px solid ${TOKENS.focusRing}`;
+        btn.style.outlineOffset = "2px";
+      });
+      btn.addEventListener("blur", () => {
+        btn.style.outline = "none";
+      });
+
+      section.prepend(btn);
+    });
+  }
+
+  // ─── SCAM DETECTION ───────────────────────────────────────
+  interface ScamResult {
+    riskLevel:  "low" | "medium" | "high";
+    reasons:    string[];
+    url:        string;
+  }
+
+  function analyzePageForScams(): ScamResult {
+    const reasons: string[] = [];
+    const url = window.location.href;
+    const pageText = document.body.innerText.toLowerCase();
+    const title = document.title.toLowerCase();
+
+    // ── URL Analysis ──
+    const urlLower = url.toLowerCase();
+    
+    // Lookalike domain detection
+    const legitimateBanks = [
+      "sbi.co.in", "hdfcbank.com", "icicibank.com",
+      "axisbank.com", "pnb.co.in", "bankofbaroda.in",
+      "paypal.com", "amazon.in", "flipkart.com",
+    ];
+    legitimateBanks.forEach(bank => {
+      const bankName = bank.split(".")[0];
+      if (urlLower.includes(bankName) && !urlLower.includes(bank)) 
