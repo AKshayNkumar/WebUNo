@@ -1,0 +1,112 @@
+'use client';
+
+import { motion } from 'framer-motion';
+import { Mic, MicOff } from 'lucide-react';
+import { useSpeechSynthesis } from '@/hooks/use-speech-synthesis';
+
+interface MicrophoneProps {
+  listening: boolean;
+  onActivate: () => void;
+  transcript?: string;
+}
+
+export function Microphone({ listening, onActivate, transcript }: MicrophoneProps) {
+  const { speak } = useSpeechSynthesis();
+
+  const handleClick = () => {
+    if (!listening) {
+      speak('I am listening');
+    }
+    onActivate();
+  };
+
+  return (
+    <div className="w-full space-y-4">
+      {/* Main Microphone Button */}
+      <motion.button
+        onClick={handleClick}
+        className={`
+          w-full h-[120px] rounded-3xl
+          flex flex-col items-center justify-center
+          text-white font-bold text-[24px]
+          shadow-elder-card
+          transition-all duration-300
+          active:scale-95
+          ${listening 
+            ? 'bg-elder-danger animate-pulse-gentle' 
+            : 'bg-elder-primary hover:bg-elder-primary-dark'
+          }
+        `}
+        whileTap={{ scale: 0.95 }}
+        aria-label={listening ? 'Listening to your voice' : 'Tap to speak'}
+      >
+        <motion.div
+          animate={listening ? { scale: [1, 1.2, 1] } : { scale: 1 }}
+          transition={{ repeat: listening ? Infinity : 0, duration: 1.5 }}
+        >
+          {listening ? (
+            <Mic className="w-16 h-16 mb-2" />
+          ) : (
+            <MicOff className="w-16 h-16 mb-2" />
+          )}
+        </motion.div>
+        
+        <span className="px-6 text-center leading-tight">
+          {listening 
+            ? 'I am listening...' 
+            : 'Tap here and tell me what you want to do today'
+          }
+        </span>
+      </motion.button>
+
+      {/* Waveform Visualization */}
+      {listening && (
+        <motion.div
+          className="flex items-center justify-center gap-2 h-16"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+        >
+          {[...Array(5)].map((_, i) => (
+            <motion.div
+              key={i}
+              className="w-3 bg-elder-danger rounded-full"
+              animate={{
+                height: [20, 40, 20],
+              }}
+              transition={{
+                repeat: Infinity,
+                duration: 0.8,
+                delay: i * 0.1,
+              }}
+            />
+          ))}
+        </motion.div>
+      )}
+
+      {/* Transcript Display */}
+      {transcript && (
+        <motion.div
+          className="bg-white border-4 border-elder-primary rounded-2xl p-6"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <p className="text-[20px] text-secondary-text mb-2 font-semibold">
+            I heard:
+          </p>
+          <p className="text-[28px] text-primary-text font-bold leading-tight mb-6">
+            "{transcript}"
+          </p>
+          
+          <div className="flex gap-4">
+            <button className="flex-1 bg-elder-success text-white h-[88px] rounded-2xl text-[24px] font-bold">
+              ✅ Yes, that's right
+            </button>
+            <button className="flex-1 bg-elder-warning text-white h-[88px] rounded-2xl text-[24px] font-bold">
+              🔄 Try again
+            </button>
+          </div>
+        </motion.div>
+      )}
+    </div>
+  );
+}

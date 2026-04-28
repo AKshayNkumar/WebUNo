@@ -1,0 +1,176 @@
+// /app/(guardian-app)/dashboard/page.tsx
+
+'use client';
+
+import { useState, useEffect } from 'react';
+import { Shield, Activity, TrendingUp, AlertTriangle, Video } from 'lucide-react';
+
+export default function GuardianDashboard() {
+  const [seniorData, setSeniorData] = useState<SeniorDashboardData | null>(null);
+  const [alerts, setAlerts] = useState<Alert[]>([]);
+
+  useEffect(() => {
+    fetchSeniorData();
+    subscribeToAlerts();
+  }, []);
+
+  return (
+    <div className="min-h-screen bg-[#F3F4F6] p-8">
+      <div className="max-w-7xl mx-auto">
+        
+        {/* Header */}
+        <div className="bg-white rounded-2xl shadow-lg p-8 mb-8">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-[36px] font-bold text-[#1A1A1A] mb-2">
+                {seniorData?.seniorName}'s Digital Journey
+              </h1>
+              <p className="text-[20px] text-[#666666]">
+                Guardian Dashboard — You're helping them stay safe online
+              </p>
+            </div>
+
+            <button
+              onClick={() => window.location.href = '/guardian/live-help'}
+              className="px-8 py-4 bg-[#1A56DB] hover:bg-[#1e40af] text-white 
+                       rounded-xl text-[20px] font-semibold
+                       transition-all duration-200 flex items-center gap-3"
+            >
+              <Video className="w-6 h-6" />
+              Join Their Screen Now
+            </button>
+          </div>
+        </div>
+
+        {/* Alert Banner (if active alerts) */}
+        {alerts.filter(a => !a.dismissed && a.severity === 'critical').length > 0 && (
+          <div className="bg-[#FEE2E2] border-l-8 border-[#CC0000] rounded-xl p-6 mb-8">
+            <div className="flex items-start gap-4">
+              <AlertTriangle className="w-8 h-8 text-[#CC0000] flex-shrink-0 mt-1" />
+              <div className="flex-1">
+                <h3 className="text-[24px] font-bold text-[#CC0000] mb-2">
+                  🚨 Scam Attempt Blocked Just Now
+                </h3>
+                <p className="text-[18px] text-[#7f0000] mb-4">
+                  Someone tried to scam {seniorData?.seniorName}. They were protected 
+                  by ElderBridge, but you should call them to check in.
+                </p>
+                <div className="flex gap-4">
+                  <button className="px-6 py-3 bg-[#CC0000] hover:bg-[#a30000] text-white 
+                                   rounded-lg font-semibold transition-all">
+                    Call Them Now
+                  </button>
+                  <button className="px-6 py-3 bg-white border-2 border-[#CC0000] 
+                                   text-[#CC0000] hover:bg-[#FEE2E2] rounded-lg 
+                                   font-semibold transition-all">
+                    View Details
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Stats Grid */}
+        <div className="grid grid-cols-4 gap-6 mb-8">
+          <StatCard
+            icon={<Activity className="w-10 h-10 text-[#1A56DB]" />}
+            label="Active This Week"
+            value={`${seniorData?.weeklyActivity || 0} days`}
+            trend="+2 from last week"
+            trendPositive={true}
+          />
+          
+          <StatCard
+            icon={<TrendingUp className="w-10 h-10 text-[#1A7340]" />}
+            label="Confidence Score"
+            value={`${seniorData?.confidenceScore || 0}/100`}
+            trend="Growing steadily"
+            trendPositive={true}
+          />
+          
+          <StatCard
+            icon={<Shield className="w-10 h-10 text-[#F59E0B]" />}
+            label="Scams Blocked"
+            value={`${seniorData?.scamsBlocked || 0}`}
+            trend="All time"
+            trendPositive={true}
+          />
+          
+          <StatCard
+            icon={<Video className="w-10 h-10 text-[#8B5CF6]" />}
+            label="Help Requests"
+            value={`${seniorData?.helpRequests || 0}`}
+            trend="This month"
+            trendPositive={false}
+          />
+        </div>
+
+        <div className="grid grid-cols-3 gap-8">
+          {/* Recent Activity */}
+          <div className="col-span-2 bg-white rounded-2xl shadow-lg p-8">
+            <h2 className="text-[28px] font-bold text-[#1A1A1A] mb-6">
+              Recent Activity
+            </h2>
+            <RecentActivityFeed activities={seniorData?.recentActivities || []} />
+          </div>
+
+          {/* Quick Actions */}
+          <div className="bg-white rounded-2xl shadow-lg p-8">
+            <h2 className="text-[28px] font-bold text-[#1A1A1A] mb-6">
+              Quick Actions
+            </h2>
+            <div className="space-y-4">
+              <QuickActionButton
+                icon="📞"
+                label="Video Call Them"
+                onClick={() => {}}
+              />
+              <QuickActionButton
+                icon="📝"
+                label="Create New Playbook"
+                onClick={() => {}}
+              />
+              <QuickActionButton
+                icon="📊"
+                label="View Full Report"
+                onClick={() => {}}
+              />
+              <QuickActionButton
+                icon="⚙️"
+                label="Adjust Settings"
+                onClick={() => {}}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* This Week's Digest Preview */}
+        <div className="mt-8 bg-gradient-to-br from-[#EEF2FF] to-[#E0E7FF] 
+                      rounded-2xl shadow-lg p-8">
+          <h2 className="text-[28px] font-bold text-[#1A1A1A] mb-6">
+            This Week's Digest (Sends Sunday)
+          </h2>
+          <WeeklyDigestPreview data={seniorData?.weeklyDigest} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function StatCard({ icon, label, value, trend, trendPositive }: any) {
+  return (
+    <div className="bg-white rounded-xl shadow p-6">
+      <div className="flex items-start justify-between mb-4">
+        <div className="w-14 h-14 bg-[#F3F4F6] rounded-lg flex items-center justify-center">
+          {icon}
+        </div>
+      </div>
+      <p className="text-[14px] text-[#666666] mb-2">{label}</p>
+      <p className="text-[32px] font-bold text-[#1A1A1A] mb-2">{value}</p>
+      <p className={`text-[14px] ${trendPositive ? 'text-[#1A7340]' : 'text-[#666666]'}`}>
+        {trend}
+      </p>
+    </div>
+  );
+}

@@ -1,0 +1,53 @@
+// /lib/voice/commandProcessor.ts
+
+export async function processVoiceCommand(
+  transcribedText: string,
+  context: UserContext
+): Promise<VoiceCommandResponse> {
+  
+  // Step 1: GPT-4 intent parsing
+  const intentResponse = await openai.chat.completions.create({
+    model: "gpt-4",
+    messages: [
+      { role: "system", content: VOICE_INTENT_SYSTEM_PROMPT },
+      { 
+        role: "user", 
+        content: `User said: "${transcribedText}"\n\nContext: ${JSON.stringify(context)}`
+      }
+    ],
+    temperature: 0.3, // Low temperature for consistent parsing
+    response_format: { type: "json_object" }
+  });
+
+  const intent = JSON.parse(intentResponse.choices[0].message.content);
+
+  // Step 2: Confidence check
+  if (intent.confidence < 0.7) {
+    return {
+      understood: false,
+      confidence: intent.confidence,
+      interpretedIntent: 'clarify',
+      confirmationMessage: `I'm not quite sure I understood. ${intent.confirmation_text}`,
+      suggestedAction: {
+        type: 'clarify',
+        payload: {
+          originalText: transcribedText,
+          possibleIntents: intent.alternatives
+        }
+      }
+    };
+  }
+
+  // Step 3: Map intent to action
+  const action = await mapIntentToAction(intent, context);
+
+  // Step 4: Return with confirmation
+  return {
+    understood: true,
+    confidence: intent.confidence,
+    interpretedIntent: intent.intent,
+    confirmationMessage: intent.confirmation_text,
+    suggestedAction: action,
+    alternatives: intent.alternatives
+  };
+}

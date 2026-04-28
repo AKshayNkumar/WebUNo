@@ -1,0 +1,184 @@
+// /components/scam/CognitiveLock.tsx
+
+'use client';
+
+import { useState, useEffect } from 'react';
+import { AlertTriangle, Phone, Shield, User } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+
+interface CognitiveLockProps {
+  scamAnalysis: ScamAnalysisResult;
+  onAnswer: (answer: 'phone_call' | 'found_myself' | 'not_sure') => void;
+  onOverride?: () => void; // For demo/testing only
+}
+
+export function CognitiveLock({ scamAnalysis, onAnswer }: CognitiveLockProps) {
+  const [hasReadAloud, setHasReadAloud] = useState(false);
+
+  useEffect(() => {
+    // Auto-read the warning
+    const message = `
+      Wait. Before you continue, I need to ask you something important.
+      
+      Did someone call you on the phone recently and tell you to 
+      visit this website or click on a link?
+      
+      This is very important. Please think carefully before answering.
+    `;
+
+    const utterance = new SpeechSynthesisUtterance(message);
+    utterance.rate = 0.7; // Slower for serious message
+    utterance.pitch = 1.0;
+    utterance.volume = 1.0;
+    window.speechSynthesis.speak(utterance);
+
+    setHasReadAloud(true);
+
+    return () => window.speechSynthesis.cancel();
+  }, []);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="fixed inset-0 bg-black/80 z-[9999] flex items-center justify-center p-6"
+    >
+      <motion.div
+        initial={{ scale: 0.9, y: 20 }}
+        animate={{ scale: 1, y: 0 }}
+        className="bg-[#FFFDF5] rounded-3xl shadow-2xl max-w-4xl w-full overflow-hidden"
+      >
+        {/* Red alert header */}
+        <div className="bg-gradient-to-r from-[#CC0000] to-[#991111] px-12 py-8">
+          <div className="flex items-center gap-6">
+            <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center animate-pulse">
+              <Shield className="w-12 h-12 text-[#CC0000]" />
+            </div>
+            <div>
+              <h2 className="text-[48px] font-bold text-white mb-2">
+                ⚠️ WAIT — STOP HERE
+              </h2>
+              <p className="text-[24px] text-white/90">
+                I need to ask you something important first
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Main question area */}
+        <div className="p-12">
+          {/* The critical question */}
+          <div className="bg-[#FEF3C7] border-4 border-[#F59E0B] rounded-2xl p-10 mb-10">
+            <p className="text-[36px] leading-[1.6] font-bold text-[#92400E] text-center mb-8">
+              Did someone CALL YOU on the phone recently and tell you to 
+              visit this website or click on a link?
+            </p>
+
+            <div className="bg-white rounded-xl p-6 mb-6">
+              <p className="text-[24px] text-[#666666] text-center">
+                <strong>Think carefully:</strong> Did anyone call and say things like:
+              </p>
+              <ul className="mt-4 space-y-2 text-[22px] text-[#444444]">
+                <li className="flex items-start gap-3">
+                  <span className="text-[#CC0000] text-[28px]">•</span>
+                  "Your account will be blocked"
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="text-[#CC0000] text-[28px]">•</span>
+                  "You need to verify your information"
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="text-[#CC0000] text-[28px]">•</span>
+                  "Click this link immediately"
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="text-[#CC0000] text-[28px]">•</span>
+                  "You won a prize, claim it now"
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          {/* Answer options */}
+          <div className="space-y-6">
+            {/* YES - someone called */}
+            <button
+              onClick={() => onAnswer('phone_call')}
+              className="w-full bg-[#CC0000] hover:bg-[#a30000] text-white rounded-2xl 
+                       p-8 transition-all duration-300 shadow-lg hover:shadow-xl
+                       border-4 border-transparent hover:border-[#7f0000]"
+            >
+              <div className="flex items-center gap-6">
+                <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center flex-shrink-0">
+                  <Phone className="w-10 h-10 text-[#CC0000]" />
+                </div>
+                <div className="text-left flex-1">
+                  <p className="text-[32px] font-bold mb-2">
+                    📞 YES, Someone Called Me
+                  </p>
+                  <p className="text-[20px] opacity-90">
+                    Someone called and told me to visit this website
+                  </p>
+                </div>
+              </div>
+            </button>
+
+            {/* NOT SURE */}
+            <button
+              onClick={() => onAnswer('not_sure')}
+              className="w-full bg-[#F59E0B] hover:bg-[#D97706] text-white rounded-2xl 
+                       p-8 transition-all duration-300 shadow-lg hover:shadow-xl
+                       border-4 border-transparent hover:border-[#B45309]"
+            >
+              <div className="flex items-center gap-6">
+                <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center flex-shrink-0">
+                  <AlertTriangle className="w-10 h-10 text-[#F59E0B]" />
+                </div>
+                <div className="text-left flex-1">
+                  <p className="text-[32px] font-bold mb-2">
+                    🤔 I'm Not Sure / I Don't Remember
+                  </p>
+                  <p className="text-[20px] opacity-90">
+                    I can't remember if someone called me about this
+                  </p>
+                </div>
+              </div>
+            </button>
+
+            {/* NO - found myself */}
+            <button
+              onClick={() => onAnswer('found_myself')}
+              className="w-full bg-[#1A56DB] hover:bg-[#1e40af] text-white rounded-2xl 
+                       p-8 transition-all duration-300 shadow-lg hover:shadow-xl
+                       border-4 border-transparent hover:border-[#1e3a8a]"
+            >
+              <div className="flex items-center gap-6">
+                <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center flex-shrink-0">
+                  <User className="w-10 h-10 text-[#1A56DB]" />
+                </div>
+                <div className="text-left flex-1">
+                  <p className="text-[32px] font-bold mb-2">
+                    ❌ NO, I Found This Myself
+                  </p>
+                  <p className="text-[20px] opacity-90">
+                    No one called me. I came here on my own.
+                  </p>
+                </div>
+              </div>
+            </button>
+          </div>
+
+          {/* Why we're asking */}
+          <div className="mt-10 bg-[#EEF2FF] rounded-xl p-6 border-2 border-[#1A56DB]">
+            <p className="text-[22px] text-[#1A1A1A] leading-relaxed">
+              <strong>Why am I asking this?</strong><br/>
+              Many scammers call elderly people and trick them into visiting 
+              fake websites. This question helps me protect you. Your answer 
+              is very important for your safety.
+            </p>
+          </div>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}

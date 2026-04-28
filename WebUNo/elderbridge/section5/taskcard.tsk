@@ -1,0 +1,69 @@
+'use client';
+
+import { motion } from 'framer-motion';
+import { ChevronRight, Volume2 } from 'lucide-react';
+import { useSpeechSynthesis } from '@/hooks/use-speech-synthesis';
+
+interface TaskCardProps {
+  icon: string;
+  label: string;
+  onClick: () => void;
+  borderColor?: string;
+}
+
+export function TaskCard({ 
+  icon, 
+  label, 
+  onClick,
+  borderColor = 'border-elder-primary'
+}: TaskCardProps) {
+  const { speak } = useSpeechSynthesis();
+
+  const handleReadAloud = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    speak(label);
+  };
+
+  return (
+    <motion.div
+      onClick={onClick}
+      className={`
+        relative w-full min-h-[88px]
+        bg-white rounded-2xl
+        border-l-[6px] ${borderColor}
+        shadow-elder-card
+        p-6
+        flex items-center gap-6
+        cursor-pointer
+        active:scale-98
+        transition-transform duration-200
+      `}
+      whileHover={{ scale: 1.02 }}
+      whileTap={{ scale: 0.98 }}
+    >
+      {/* Icon */}
+      <div className="text-[48px] flex-shrink-0" role="img" aria-label={label}>
+        {icon}
+      </div>
+
+      {/* Label */}
+      <div className="flex-1">
+        <p className="text-[26px] font-bold text-primary-text leading-tight">
+          {label}
+        </p>
+      </div>
+
+      {/* Read Aloud Button */}
+      <button
+        onClick={handleReadAloud}
+        className="flex-shrink-0 w-12 h-12 rounded-full bg-elder-primary/10 flex items-center justify-center hover:bg-elder-primary/20 transition-colors"
+        aria-label={`Read "${label}" aloud`}
+      >
+        <Volume2 className="w-6 h-6 text-elder-primary" />
+      </button>
+
+      {/* Arrow Indicator */}
+      <ChevronRight className="w-8 h-8 text-secondary-text flex-shrink-0" />
+    </motion.div>
+  );
+}

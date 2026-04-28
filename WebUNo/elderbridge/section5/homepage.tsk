@@ -1,0 +1,222 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Microphone } from '@/components/ui/microphone-button';
+import { TaskCard } from '@/components/ui/task-card';
+import { ReminderCard } from '@/components/ui/reminder-card';
+import { BottomNav } from '@/components/ui/bottom-nav';
+import { useVoiceCommand } from '@/hooks/use-voice-command';
+import { useSpeechSynthesis } from '@/hooks/use-speech-synthesis';
+
+interface Reminder {
+  id: string;
+  type: 'medicine' | 'bill' | 'appointment' | 'call';
+  title: string;
+  subtitle?: string;
+  time?: string;
+  urgent: boolean;
+}
+
+interface QuickTask {
+  id: string;
+  icon: string;
+  label: string;
+  action: string;
+}
+
+export default function SeniorHomePage() {
+  const [userName, setUserName] = useState('');
+  const [greeting, setGreeting] = useState('');
+  const [reminders, setReminders] = useState<Reminder[]>([]);
+  const [quickTasks, setQuickTasks] = useState<QuickTask[]>([]);
+  const [currentDate, setCurrentDate] = useState('');
+
+  const { speak, speaking } = useSpeechSynthesis();
+  const { listening, transcript, startListening } = useVoiceCommand();
+
+  useEffect(() => {
+    // Initialize user data
+    loadUserData();
+    setGreetingMessage();
+    setFormattedDate();
+    loadReminders();
+    loadQuickTasks();
+
+    // Welcome voice on first load
+    const hasGreeted = sessionStorage.getItem('hasGreeted');
+    if (!hasGreeted) {
+      setTimeout(() => {
+        speak(`Good ${getTimeOfDay()}, ${userName}. What would you like to do today?`);
+        sessionStorage.setItem('hasGreeted', 'true');
+      }, 1000);
+    }
+  }, []);
+
+  const loadUserData = async () => {
+    // In production, fetch from API
+    const user = {
+      name: 'Kamala',
+      preferredLanguage: 'en',
+      fontSize: 26
+    };
+    setUserName(user.name);
+  };
+
+  const setGreetingMessage = () => {
+    const hour = new Date().getHours();
+    let greetingMsg = '';
+    let emoji = '';
+
+    if (hour < 12) {
+      greetingMsg = 'Good Morning';
+      emoji = '🌅';
+    } else if (hour < 17) {
+      greetingMsg = 'Good Afternoon';
+      emoji = '☀️';
+    } else {
+      greetingMsg = 'Good Evening';
+      emoji = '🌆';
+    }
+
+    setGreeting(`${greetingMsg}, ${userName} ${emoji}`);
+  };
+
+  const getTimeOfDay = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'morning';
+    if (hour < 17) return 'afternoon';
+    return 'evening';
+  };
+
+  const setFormattedDate = () => {
+    const date = new Date();
+    const options: Intl.DateTimeFormatOptions = { 
+      weekday: 'long', 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    };
+    setCurrentDate(date.toLocaleDateString('en-IN', options));
+  };
+
+  const loadReminders = async () => {
+    // Mock data - in production, fetch from API
+    setReminders([
+      {
+        id: '1',
+        type: 'medicine',
+        title: 'Metformin — After Breakfast',
+        time: '9:00 AM',
+        urgent: true
+      },
+      {
+        id: '2',
+        type: 'bill',
+        title: 'Electricity Bill Due Today',
+        subtitle: '₹1,240',
+        urgent: true
+      }
+    ]);
+  };
+
+  const loadQuickTasks = async () => {
+    // Mock data - in production, personalized from user history
+    setQuickTasks([
+      { id: '1', icon: '📞', label: 'Call Daughter', action: 'call_daughter' },
+      { id: '2', icon: '💰', label: 'Check Bank Balance', action: 'check_balance' },
+      { id: '3', icon: '📋', label: 'My Medicine Schedule', action: 'view_medicines' }
+    ]);
+  };
+
+  const handleVoiceCommand = async () => {
+    await startListening();
+  };
+
+  const handleTaskClick = (taskAction: string) => {
+    // Route to appropriate playbook or feature
+    console.log('Task clicked:', taskAction);
+  };
+
+  return (
+    <div className="min-h-screen bg-warm-white pb-24">
+      {/* Header Section */}
+      <header className="px-6 pt-8 pb-6 bg-gradient-to-b from-warm-white to-transparent">
+        <motion.h1 
+          className="text-[42px] font-bold text-primary-text leading-tight mb-2"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+        >
+          {greeting}
+        </motion.h1>
+        <p className="text-[28px] text-secondary-text font-semibold">
+          {currentDate}
+        </p>
+      </header>
+
+      <main className="px-6 space-y-8">
+        {/* Microphone Button - Primary Interaction */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.4, delay: 0.2 }}
+        >
+          <Microphone
+            listening={listening}
+            onActivate={handleVoiceCommand}
+            transcript={transcript}
+          />
+        </motion.div>
+
+        {/* Today's Reminders */}
+        {reminders.length > 0 && (
+          <section className="space-y-4">
+            <h2 className="text-[32px] font-bold text-primary-text mb-4">
+              Today's Reminders
+            </h2>
+            <AnimatePresence>
+              {reminders.map((reminder, index) => (
+                <motion.div
+                  key={reminder.id}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 20 }}
+                  transition={{ duration: 0.4, delay: index * 0.1 }}
+                >
+                  <ReminderCard reminder={reminder} />
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </section>
+        )}
+
+        {/* Quick Tasks */}
+        <section className="space-y-4">
+          <h2 className="text-[32px] font-bold text-primary-text mb-4">
+            Quick Tasks
+          </h2>
+          <div className="space-y-3">
+            {quickTasks.map((task, index) => (
+              <motion.div
+                key={task.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: 0.4 + index * 0.1 }}
+              >
+                <TaskCard
+                  icon={task.icon}
+                  label={task.label}
+                  onClick={() => handleTaskClick(task.action)}
+                />
+              </motion.div>
+            ))}
+          </div>
+        </section>
+      </main>
+
+      {/* Bottom Navigation */}
+      <BottomNav activeTab="home" />
+    </div>
+  );
+}

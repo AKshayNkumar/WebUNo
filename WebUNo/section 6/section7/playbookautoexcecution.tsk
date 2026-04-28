@@ -1,0 +1,108 @@
+// /lib/playbook/autoExecutor.ts
+
+interface AutoExecuteStep {
+  action: 'click' | 'type' | 'wait' | 'scroll';
+  targetSelector: string;
+  value?: string;
+  waitMs?: number;
+}
+
+export class PlaybookAutoExecutor {
+  
+  async executeStep(step: AutoExecuteStep): Promise<boolean> {
+    try {
+      const element = await this.waitForElement(step.targetSelector);
+      
+      switch (step.action) {
+        case 'click':
+          await this.safeClick(element);
+          break;
+          
+        case 'type':
+          await this.safeType(element, step.value || '');
+          break;
+          
+        case 'scroll':
+          await this.safeScroll(element);
+          break;
+          
+        case 'wait':
+          await this.wait(step.waitMs || 1000);
+          break;
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Auto-execute failed:', error);
+      return false;
+    }
+  }
+
+  private async waitForElement(
+    selector: string, 
+    timeout = 10000
+  ): Promise<Element> {
+    const startTime = Date.now();
+    
+    while (Date.now() - startTime < timeout) {
+      const element = document.querySelector(selector);
+      if (element) {
+        // Scroll into view gently
+        element.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'center' 
+        });
+        await this.wait(500); // Let scroll complete
+        return element;
+      }
+      await this.wait(100);
+    }
+    
+    throw new Error(`Element not found: ${selector}`);
+  }
+
+  private async safeClick(element: Element): Promise<void> {
+    // Visual feedback before click
+    const originalBg = (element as HTMLElement).style.backgroundColor;
+    (element as HTMLElement).style.backgroundColor = '#FFD700';
+    await this.wait(300);
+    (element as HTMLElement).style.backgroundColor = originalBg;
+    
+    // Simulate human-like click
+    if (element instanceof HTMLElement) {
+      element.focus();
+      await this.wait(200);
+      element.click();
+    }
+  }
+
+  private async safeType(element: Element, text: string): Promise<void> {
+    if (element instanceof HTMLInputElement || 
+        element instanceof HTMLTextAreaElement) {
+      
+      element.focus();
+      await this.wait(300);
+      
+      // Type character by character (more human-like)
+      for (let i = 0; i < text.length; i++) {
+        element.value += text[i];
+        element.dispatchEvent(new Event('input', { bubbles: true }));
+        await this.wait(50 + Math.random() * 100); // Variable typing speed
+      }
+      
+      element.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+  }
+
+  private async safeScroll(element: Element): Promise<void> {
+    element.scrollIntoView({ 
+      behavior: 'smooth', 
+      block: 'start' 
+    });
+    await this.wait(800);
+  }
+
+  private wait(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+}

@@ -1,0 +1,24 @@
+// /app/api/voice/process/route.ts
+
+interface VoiceCommandRequest {
+  audioBlob?: Blob;           // Raw audio from microphone
+  transcribedText?: string;   // Or pre-transcribed text
+  userId: string;
+  currentContext: {
+    currentPage: string;
+    lastAction: string;
+    activePlaybook?: string;
+  };
+}
+
+interface VoiceCommandResponse {
+  understood: boolean;
+  confidence: number;         // 0-1 scale
+  interpretedIntent: string;
+  confirmationMessage: string; // "I heard: Pay electricity bill"
+  suggestedAction: {
+    type: 'navigate' | 'playbook' | 'help' | 'settings' | 'clarify';
+    payload: any;
+  };
+  alternatives?: string[];    // "Did you mean: Pay water bill?"
+}

@@ -1,0 +1,343 @@
+// /components/SandboxMode.tsx
+
+'use client';
+
+import { useState, useRef, useEffect } from 'react';
+import { Shield, Play, CheckCircle, AlertTriangle } from 'lucide-react';
+
+interface SandboxModeProps {
+  targetUrl: string;
+  playbookSteps: PlaybookStep[];
+  onComplete: (metrics: PracticeMetrics) => void;
+  onExit: () => void;
+}
+
+interface PracticeMetrics {
+  totalTime: number;
+  attempts: number;
+  mistakesCount: number;
+  stepsCompleted: number;
+  confidenceScore: number; // 0-100
+}
+
+export function SandboxMode({ 
+  targetUrl, 
+  playbookSteps, 
+  onComplete,
+  onExit 
+}: SandboxModeProps) {
+  
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const [metrics, setMetrics] = useState<PracticeMetrics>({
+    totalTime: 0,
+    attempts: 0,
+    mistakesCount: 0,
+    stepsCompleted: 0,
+    confidenceScore: 0
+  });
+  const [currentStep, setCurrentStep] = useState(0);
+  const [practiceStarted, setPracticeStarted] = useState(false);
+  const startTimeRef = useRef<number>(0);
+
+  useEffect(() => {
+    if (practiceStarted && iframeRef.current) {
+      injectSandboxMiddleware();
+    }
+  }, [practiceStarted]);
+
+  const injectSandboxMiddleware = () => {
+    const iframe = iframeRef.current;
+    if (!iframe || !iframe.contentWindow) return;
+
+    // Inject interception script
+    const script = iframe.contentDocument?.createElement('script');
+    if (!script) return;
+
+    script.textContent = `
+      (function() {
+        // Store original functions
+        const originalFetch = window.fetch;
+        const originalXHR = window.XMLHttpRequest;
+        const originalSubmit = HTMLFormElement.prototype.submit;
+
+        // Intercept fetch
+        window.fetch = function(...args) {
+          console.log('[SANDBOX] Intercepted fetch:', args);
+          window.parent.postMessage({
+            type: 'SANDBOX_NETWORK_ATTEMPT',
+            method: 'fetch',
+            url: args[0]
+          }, '*');
+          
+          // Return mock success
+          return Promise.resolve(new Response(
+            JSON.stringify({ success: true, sandbox: true }),
+            { status: 200, headers: { 'Content-Type': 'application/json' }}
+          ));
+        };
+
+        // Intercept form submissions
+        HTMLFormElement.prototype.submit = function() {
+          console.log('[SANDBOX] Intercepted form submission');
+          window.parent.postMessage({
+            type: 'SANDBOX_FORM_SUBMIT',
+            formData: new FormData(this)
+          }, '*');
+          
+          // Show success message instead of submitting
+          const successDiv = document.createElement('div');
+          successDiv.style.cssText = \`
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #1A7340;
+            color: white;
+            padding: 40px;
+            border-radius: 20px;
+            font-size: 32px;
+            font-weight: bold;
+            z-index: 999999;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+          \`;
+          successDiv.innerHTML = \`
+            <div style="text-align: center;">
+              ✅<br>
+              Great job!<br>
+              <span style="font-size: 24px; opacity: 0.9;">
+                In real life, this would have been submitted.<br>
+                Nothing actually happened — this is practice!
+              </span>
+            </div>
+          \`;
+          document.body.appendChild(successDiv);
+          
+          return false;
+        };
+
+        // Intercept button clicks that might trigger actions
+        document.addEventListener('click', function(e) {
+          const target = e.target;
+          if (target.matches('button[type="submit"], input[type="submit"]')) {
+            e.preventDefault();
+            window.parent.postMessage({
+              type: 'SANDBOX_ACTION_ATTEMPT',
+              action: 'submit_button_click'
+            }, '*');
+          }
+        }, true);
+
+        // Add visual indicator
+        const indicator = document.createElement('div');
+        indicator.style.cssText = \`
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%);
+          color: #92400E;
+          padding: 16px;
+          text-align: center;
+          font-size: 24px;
+          font-weight: bold;
+          z-index: 999999;
+          border-bottom: 4px solid #F59E0B;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        \`;
+        indicator.innerHTML = '🎮 PRACTICE MODE — Nothing you do here is real';
+        document.body.prepend(indicator);
+      })();
+    `;
+
+    iframe.contentDocument?.body.appendChild(script);
+  };
+
+  // Listen for messages from iframe
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data.type?.startsWith('SANDBOX_')) {
+        handleSandboxEvent(event.data);
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, []);
+
+  const handleSandboxEvent = (data: any) => {
+    console.log('Sandbox event:', data);
+    
+    setMetrics(prev => ({
+      ...prev,
+      attempts: prev.attempts + 1
+    }));
+
+    if (data.type === 'SANDBOX_FORM_SUBMIT') {
+      // Step completed successfully
+      setTimeout(() => {
+        handleStepComplete();
+      }, 3000); // Show success message for 3 seconds
+    }
+  };
+
+  const handleStepComplete = () => {
+    const newStepsCompleted = currentStep + 1;
+    
+    setMetrics(prev => ({
+      ...prev,
+      stepsCompleted: newStepsCompleted
+    }));
+
+    if (newStepsCompleted >= playbookSteps.length) {
+      // Practice completed!
+      completePractice();
+    } else {
+      setCurrentStep(newStepsCompleted);
+    }
+  };
+
+  const completePractice = () => {
+    const totalTime = Date.now() - startTimeRef.current;
+    const confidenceScore = calculateConfidenceScore(metrics, totalTime);
+    
+    const finalMetrics = {
+      ...metrics,
+      totalTime,
+      confidenceScore
+    };
+
+    onComplete(finalMetrics);
+  };
+
+  const calculateConfidenceScore = (
+    metrics: PracticeMetrics, 
+    totalTime: number
+  ): number => {
+    // Simple scoring algorithm
+    const completionBonus = (metrics.stepsCompleted / playbookSteps.length) * 50;
+    const speedBonus = Math.max(0, 30 - (totalTime / 60000) * 2); // Penalty for slow
+    const accuracyBonus = Math.max(0, 20 - metrics.mistakesCount * 5);
+    
+    return Math.min(100, Math.round(completionBonus + speedBonus + accuracyBonus));
+  };
+
+  const startPractice = () => {
+    setPracticeStarted(true);
+    startTimeRef.current = Date.now();
+  };
+
+  if (!practiceStarted) {
+    return (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-6">
+        <div className="bg-[#FFFDF5] rounded-3xl shadow-2xl max-w-3xl w-full p-12">
+          <div className="text-center">
+            <Shield className="w-24 h-24 text-[#F59E0B] mx-auto mb-6" />
+            
+            <h2 className="text-[48px] font-bold text-[#1A1A1A] mb-6">
+              Practice Mode
+            </h2>
+            
+            <div className="bg-[#FEF3C7] border-2 border-[#F59E0B] rounded-2xl p-8 mb-8">
+              <p className="text-[28px] text-[#92400E] leading-relaxed mb-6">
+                This is a <strong>completely safe practice area</strong>.
+              </p>
+              <ul className="text-[24px] text-[#92400E] text-left space-y-3">
+                <li className="flex items-start gap-3">
+                  <span className="text-[32px]">✓</span>
+                  <span>No real money will move</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="text-[32px]">✓</span>
+                  <span>Nothing will actually be submitted</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="text-[32px]">✓</span>
+                  <span>You can make mistakes freely</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="text-[32px]">✓</span>
+                  <span>Try as many times as you like</span>
+                </li>
+              </ul>
+            </div>
+
+            <p className="text-[26px] text-[#666666] mb-8">
+              You'll practice: <strong>{playbookSteps.length} steps</strong>
+            </p>
+
+            <div className="grid grid-cols-2 gap-6">
+              <button
+                onClick={onExit}
+                className="h-[88px] bg-white border-4 border-[#666666] hover:bg-[#F3F4F6]
+                         text-[#666666] rounded-2xl text-[28px] font-bold
+                         transition-all duration-200"
+              >
+                Skip Practice
+              </button>
+              
+              <button
+                onClick={startPractice}
+                className="h-[88px] bg-[#1A56DB] hover:bg-[#1e40af] text-white 
+                         rounded-2xl text-[28px] font-bold
+                         transition-all duration-300 shadow-lg hover:shadow-xl
+                         flex items-center justify-center gap-4"
+              >
+                <Play className="w-8 h-8" />
+                Start Practice
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="fixed inset-0 bg-[#FFFDF5] z-50 flex flex-col">
+      {/* Practice header */}
+      <div className="bg-gradient-to-r from-[#FEF3C7] to-[#FDE68A] border-b-4 border-[#F59E0B] px-8 py-6">
+        <div className="max-w-6xl mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Shield className="w-12 h-12 text-[#F59E0B]" />
+            <div>
+              <p className="text-[32px] font-bold text-[#92400E]">
+                🎮 Practice Mode Active
+              </p>
+              <p className="text-[20px] text-[#92400E]">
+                Step {currentStep + 1} of {playbookSteps.length}
+              </p>
+            </div>
+          </div>
+
+          <button
+            onClick={onExit}
+            className="px-6 py-3 bg-[#CC0000] hover:bg-[#a30000] text-white
+                     rounded-xl text-[24px] font-semibold transition-all duration-200"
+          >
+            Exit Practice
+          </button>
+        </div>
+      </div>
+
+      {/* Sandboxed iframe */}
+      <div className="flex-1 relative">
+        <iframe
+          ref={iframeRef}
+          src={targetUrl}
+          className="w-full h-full border-none"
+          sandbox="allow-scripts allow-same-origin allow-forms"
+          title="Practice sandbox"
+        />
+      </div>
+
+      {/* Metrics footer */}
+      <div className="bg-white border-t-4 border-[#E5E7EB] px-8 py-4">
+        <div className="max-w-6xl mx-auto flex items-center justify-between text-[20px] text-[#666666]">
+          <span>Attempts: {metrics.attempts}</span>
+          <span>Steps Done: {metrics.stepsCompleted}/{playbookSteps.length}</span>
+          <span>Time: {Math.floor((Date.now() - startTimeRef.current) / 1000)}s</span>
+        </div>
+      </div>
+    </div>
+  );
+}

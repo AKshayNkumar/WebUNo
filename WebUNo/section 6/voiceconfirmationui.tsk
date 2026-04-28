@@ -1,0 +1,98 @@
+// /components/VoiceConfirmation.tsx
+
+'use client';
+
+import { useState, useEffect } from 'react';
+import { Volume2, Check, X, RotateCcw } from 'lucide-react';
+
+export function VoiceConfirmation({ 
+  heardText, 
+  onConfirm, 
+  onRetry,
+  alternatives 
+}: VoiceConfirmationProps) {
+  
+  useEffect(() => {
+    // Auto-read confirmation aloud
+    const utterance = new SpeechSynthesisUtterance(
+      `I heard: ${heardText}. Is that correct?`
+    );
+    utterance.rate = 0.8; // Slower speech
+    utterance.pitch = 1.0;
+    utterance.volume = 1.0;
+    window.speechSynthesis.speak(utterance);
+  }, [heardText]);
+
+  return (
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-6">
+      <div className="bg-[#FFFDF5] rounded-3xl shadow-2xl max-w-2xl w-full p-12">
+        
+        {/* What was heard */}
+        <div className="mb-10">
+          <div className="flex items-center gap-4 mb-6">
+            <Volume2 className="w-12 h-12 text-[#1A56DB]" />
+            <p className="text-[28px] text-[#666666] font-semibold">
+              I heard you say:
+            </p>
+          </div>
+          
+          <div className="bg-white border-4 border-[#1A56DB] rounded-2xl p-8">
+            <p className="text-[42px] font-bold text-[#1A1A1A] leading-relaxed">
+              "{heardText}"
+            </p>
+          </div>
+        </div>
+
+        {/* Confirmation question */}
+        <p className="text-[32px] text-[#1A1A1A] font-semibold mb-8 text-center">
+          Is that correct?
+        </p>
+
+        {/* Action buttons */}
+        <div className="grid grid-cols-2 gap-6 mb-8">
+          <button
+            onClick={onConfirm}
+            className="h-[96px] bg-[#1A7340] hover:bg-[#155c33] text-white rounded-2xl
+                     text-[32px] font-bold flex items-center justify-center gap-4
+                     transition-all duration-300 shadow-lg hover:shadow-xl"
+          >
+            <Check className="w-10 h-10" />
+            Yes, Correct
+          </button>
+          
+          <button
+            onClick={onRetry}
+            className="h-[96px] bg-[#CC0000] hover:bg-[#a30000] text-white rounded-2xl
+                     text-[32px] font-bold flex items-center justify-center gap-4
+                     transition-all duration-300 shadow-lg hover:shadow-xl"
+          >
+            <RotateCcw className="w-10 h-10" />
+            Try Again
+          </button>
+        </div>
+
+        {/* Alternatives if available */}
+        {alternatives && alternatives.length > 0 && (
+          <div className="border-t-2 border-gray-200 pt-8">
+            <p className="text-[24px] text-[#666666] mb-4">
+              Or did you mean:
+            </p>
+            <div className="space-y-3">
+              {alternatives.map((alt, index) => (
+                <button
+                  key={index}
+                  onClick={() => onConfirm(alt)}
+                  className="w-full h-[72px] bg-white border-2 border-[#1A56DB] 
+                           hover:bg-[#EEF2FF] rounded-xl text-[26px] font-semibold
+                           text-[#1A56DB] transition-all duration-200"
+                >
+                  {alt}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

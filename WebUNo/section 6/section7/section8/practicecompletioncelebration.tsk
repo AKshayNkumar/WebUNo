@@ -1,0 +1,127 @@
+// /components/PracticeComplete.tsx
+
+'use client';
+
+import { Trophy, TrendingUp, Clock, Target } from 'lucide-react';
+import Confetti from 'react-confetti';
+
+export function PracticeComplete({ 
+  metrics, 
+  onProceedToReal, 
+  onPracticeAgain 
+}: PracticeCompleteProps) {
+  
+  const getConfidenceMessage = (score: number) => {
+    if (score >= 80) return {
+      message: "You're ready! You did that perfectly!",
+      emoji: "🌟",
+      color: "#1A7340"
+    };
+    if (score >= 60) return {
+      message: "You're doing great! Want to try once more or go ahead?",
+      emoji: "🌿",
+      color: "#1A56DB"
+    };
+    return {
+      message: "Good try! Want to practice again? There's no rush.",
+      emoji: "🌱",
+      color: "#F59E0B"
+    };
+  };
+
+  const confidence = getConfidenceMessage(metrics.confidenceScore);
+
+  return (
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-6">
+      {metrics.confidenceScore >= 70 && (
+        <Confetti
+          width={window.innerWidth}
+          height={window.innerHeight}
+          recycle={false}
+          numberOfPieces={500}
+        />
+      )}
+
+      <div className="bg-[#FFFDF5] rounded-3xl shadow-2xl max-w-4xl w-full p-12">
+        <div className="text-center mb-10">
+          <div className="text-[120px] mb-4">{confidence.emoji}</div>
+          <h2 className="text-[52px] font-bold text-[#1A1A1A] mb-4">
+            Practice Complete!
+          </h2>
+          <p className="text-[32px] text-[#666666] leading-relaxed">
+            {confidence.message}
+          </p>
+        </div>
+
+        {/* Metrics cards */}
+        <div className="grid grid-cols-2 gap-6 mb-10">
+          <div className="bg-white rounded-2xl p-8 border-2 border-[#E5E7EB]">
+            <div className="flex items-center gap-4 mb-2">
+              <Clock className="w-8 h-8 text-[#1A56DB]" />
+              <span className="text-[24px] text-[#666666]">Time Taken</span>
+            </div>
+            <p className="text-[48px] font-bold text-[#1A1A1A]">
+              {Math.floor(metrics.totalTime / 60000)}m {Math.floor((metrics.totalTime % 60000) / 1000)}s
+            </p>
+          </div>
+
+          <div className="bg-white rounded-2xl p-8 border-2 border-[#E5E7EB]">
+            <div className="flex items-center gap-4 mb-2">
+              <Target className="w-8 h-8 text-[#1A56DB]" />
+              <span className="text-[24px] text-[#666666]">Accuracy</span>
+            </div>
+            <p className="text-[48px] font-bold text-[#1A1A1A]">
+              {Math.round((metrics.stepsCompleted / metrics.attempts) * 100)}%
+            </p>
+          </div>
+        </div>
+
+        {/* Confidence score */}
+        <div className="bg-gradient-to-r from-[#EEF2FF] to-[#DBEAFE] rounded-2xl p-8 mb-10">
+          <div className="flex items-center justify-between mb-4">
+            <span className="text-[28px] font-semibold text-[#1A1A1A]">
+              Your Readiness Score
+            </span>
+            <Trophy className="w-12 h-12" style={{ color: confidence.color }} />
+          </div>
+          
+          <div className="relative w-full h-8 bg-white rounded-full overflow-hidden mb-4">
+            <div 
+              className="h-full transition-all duration-1000 ease-out"
+              style={{ 
+                width: `${metrics.confidenceScore}%`,
+                background: `linear-gradient(90deg, ${confidence.color} 0%, ${confidence.color}dd 100%)`
+              }}
+            />
+          </div>
+          
+          <p className="text-[40px] font-bold text-center" style={{ color: confidence.color }}>
+            {metrics.confidenceScore}/100
+          </p>
+        </div>
+
+        {/* Action buttons */}
+        <div className="grid grid-cols-2 gap-6">
+          <button
+            onClick={onPracticeAgain}
+            className="h-[96px] bg-white border-4 border-[#1A56DB] hover:bg-[#EEF2FF]
+                     text-[#1A56DB] rounded-2xl text-[32px] font-bold
+                     transition-all duration-200 flex items-center justify-center gap-4"
+          >
+            🔄 Practice Again
+          </button>
+          
+          <button
+            onClick={onProceedToReal}
+            className="h-[96px] bg-[#1A7340] hover:bg-[#155c33] text-white 
+                     rounded-2xl text-[32px] font-bold
+                     transition-all duration-300 shadow-lg hover:shadow-xl
+                     flex items-center justify-center gap-4"
+          >
+            ✅ I'm Ready — Do It For Real
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}

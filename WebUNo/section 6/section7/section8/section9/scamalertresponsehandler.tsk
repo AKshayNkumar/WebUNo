@@ -1,0 +1,230 @@
+// /components/scam/ScamResponse.tsx
+
+'use client';
+
+import { useEffect } from 'react';
+import { XCircle, Phone, MessageCircle, Home } from 'lucide-react';
+
+interface ScamResponseProps {
+  cognitiveAnswer: 'phone_call' | 'found_myself' | 'not_sure';
+  scamAnalysis: ScamAnalysisResult;
+  onGoHome: () => void;
+  onContactGuardian: () => void;
+}
+
+export function ScamResponse({ 
+  cognitiveAnswer, 
+  scamAnalysis,
+  onGoHome,
+  onContactGuardian 
+}: ScamResponseProps) {
+
+  useEffect(() => {
+    // Log scam attempt
+    logScamAttempt(cognitiveAnswer, scamAnalysis);
+
+    // Alert all guardians immediately
+    if (cognitiveAnswer === 'phone_call' || cognitiveAnswer === 'not_sure') {
+      alertGuardians(scamAnalysis);
+    }
+
+    // Read response aloud
+    const message = getVoiceMessage(cognitiveAnswer);
+    const utterance = new SpeechSynthesisUtterance(message);
+    utterance.rate = 0.8;
+    window.speechSynthesis.speak(utterance);
+  }, []);
+
+  const getVoiceMessage = (answer: string): string => {
+    if (answer === 'phone_call') {
+      return `This is very likely a scam. I have blocked this website and 
+              alerted your family. Someone is trying to trick you. 
+              Please close this page and do not share any information.`;
+    }
+    if (answer === 'not_sure') {
+      return `I'm not sure if this is safe, so I'm being extra careful. 
+              I've alerted your family just to be safe. 
+              Let's go back to the home screen.`;
+    }
+    return `I still have concerns about this website. 
+            I recommend going back to the home screen.`;
+  };
+
+  // CRITICAL RESPONSE: Phone call confirmed
+  if (cognitiveAnswer === 'phone_call') {
+    return (
+      <div className="fixed inset-0 bg-[#CC0000] z-[9999] flex items-center justify-center p-6">
+        <div className="bg-white rounded-3xl shadow-2xl max-w-4xl w-full p-12 text-center">
+          <XCircle className="w-32 h-32 text-[#CC0000] mx-auto mb-8 animate-pulse" />
+          
+          <h2 className="text-[56px] font-bold text-[#CC0000] mb-8">
+            🛑 SCAM BLOCKED
+          </h2>
+
+          <div className="bg-[#FEE2E2] border-4 border-[#CC0000] rounded-2xl p-10 mb-10">
+            <p className="text-[32px] leading-[1.6] text-[#7f0000] font-semibold">
+              This is a SCAM. Someone was trying to trick you into giving 
+              them your money or personal information.
+            </p>
+          </div>
+
+          <div className="bg-[#F3F4F6] rounded-2xl p-8 mb-10 text-left">
+            <p className="text-[28px] text-[#1A1A1A] font-bold mb-6">
+              What I've done to protect you:
+            </p>
+            <ul className="space-y-4 text-[24px] text-[#444444]">
+              <li className="flex items-start gap-4">
+                <span className="text-[#1A7340] text-[32px]">✓</span>
+                <span>Blocked this dangerous website</span>
+              </li>
+              <li className="flex items-start gap-4">
+                <span className="text-[#1A7340] text-[32px]">✓</span>
+                <span>Sent an alert to your family members</span>
+              </li>
+              <li className="flex items-start gap-4">
+                <span className="text-[#1A7340] text-[32px]">✓</span>
+                <span>Saved a record of this attempt</span>
+              </li>
+              <li className="flex items-start gap-4">
+                <span className="text-[#1A7340] text-[32px]">✓</span>
+                <span>Made sure no information was shared</span>
+              </li>
+            </ul>
+          </div>
+
+          <div className="bg-[#DBEAFE] border-2 border-[#1A56DB] rounded-2xl p-8 mb-10">
+            <p className="text-[26px] text-[#1A1A1A] leading-relaxed">
+              <strong>Remember:</strong> Real banks and government offices 
+              will NEVER call you and ask you to click on links or share 
+              passwords, OTP, CVV, or Aadhaar numbers over the phone.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-6">
+            <button
+              onClick={onContactGuardian}
+              className="h-[96px] bg-[#1A56DB] hover:bg-[#1e40af] text-white 
+                       rounded-2xl text-[28px] font-bold
+                       transition-all duration-300 shadow-lg hover:shadow-xl
+                       flex items-center justify-center gap-4"
+            >
+              <Phone className="w-10 h-10" />
+              Call Family Now
+            </button>
+
+            <button
+              onClick={onGoHome}
+              className="h-[96px] bg-[#1A7340] hover:bg-[#155c33] text-white 
+                       rounded-2xl text-[28px] font-bold
+                       transition-all duration-300 shadow-lg hover:shadow-xl
+                       flex items-center justify-center gap-4"
+            >
+              <Home className="w-10 h-10" />
+              Go to Safe Home Screen
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // WARNING RESPONSE: Not sure or found myself but still suspicious
+  return (
+    <div className="fixed inset-0 bg-black/80 z-[9999] flex items-center justify-center p-6">
+      <div className="bg-[#FFFDF5] rounded-3xl shadow-2xl max-w-4xl w-full p-12">
+        <div className="text-center mb-10">
+          <div className="w-24 h-24 bg-[#FEF3C7] rounded-full flex items-center justify-center mx-auto mb-6">
+            <XCircle className="w-16 h-16 text-[#F59E0B]" />
+          </div>
+
+          <h2 className="text-[48px] font-bold text-[#1A1A1A] mb-6">
+            I Have Concerns About This Website
+          </h2>
+
+          <p className="text-[28px] text-[#666666] leading-relaxed">
+            {scamAnalysis.userMessage}
+          </p>
+        </div>
+
+        {/* Show top 3 flags */}
+        <div className="bg-white rounded-2xl p-8 mb-10 border-2 border-[#F59E0B]">
+          <p className="text-[26px] font-bold text-[#1A1A1A] mb-6">
+            Warning signs I found:
+          </p>
+          <div className="space-y-4">
+            {scamAnalysis.flags.slice(0, 3).map((flag, index) => (
+              <div key={index} className="flex items-start gap-4">
+                <span className="text-[32px] flex-shrink-0">⚠️</span>
+                <p className="text-[24px] text-[#444444]">
+                  {flag.description}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="bg-[#EEF2FF] rounded-2xl p-8 mb-10">
+          <p className="text-[26px] text-[#1A1A1A] leading-relaxed">
+            <strong>My recommendation:</strong> It's safer to go back to the 
+            home screen. If you really need to do something on this website, 
+            please ask a family member to help you first.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-2 gap-6">
+          <button
+            onClick={onContactGuardian}
+            className="h-[96px] bg-[#1A56DB] hover:bg-[#1e40af] text-white 
+                     rounded-2xl text-[28px] font-bold
+                     transition-all duration-300 shadow-lg hover:shadow-xl
+                     flex items-center justify-center gap-4"
+          >
+            <MessageCircle className="w-10 h-10" />
+            Ask Family First
+          </button>
+
+          <button
+            onClick={onGoHome}
+            className="h-[96px] bg-[#1A7340] hover:bg-[#155c33] text-white 
+                     rounded-2xl text-[28px] font-bold
+                     transition-all duration-300 shadow-lg hover:shadow-xl
+                     flex items-center justify-center gap-4"
+          >
+            <Home className="w-10 h-10" />
+            Go Back Home (Safer)
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Backend functions
+async function logScamAttempt(
+  answer: string, 
+  analysis: ScamAnalysisResult
+) {
+  await fetch('/api/scam/log-attempt', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      cognitiveAnswer: answer,
+      analysis,
+      timestamp: new Date(),
+      blocked: answer === 'phone_call' || answer === 'not_sure'
+    })
+  });
+}
+
+async function alertGuardians(analysis: ScamAnalysisResult) {
+  await fetch('/api/guardian/alert', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      alertType: 'scam_attempt',
+      severity: 'critical',
+      message: `Scam attempt blocked! Someone may have called them.`,
+      analysis
+    })
+  });
+}

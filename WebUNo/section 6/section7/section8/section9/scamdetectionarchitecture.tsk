@@ -1,0 +1,573 @@
+// /lib/scam/ScamDetector.ts
+
+export interface ScamAnalysisResult {
+  threatLevel: 'safe' | 'warning' | 'danger' | 'critical';
+  confidence: number; // 0-1
+  flags: ScamFlag[];
+  shouldBlock: boolean;
+  userMessage: string;
+  technicalDetails: string;
+  recommendedAction: 'proceed' | 'verify' | 'block' | 'alert_guardian';
+}
+
+export interface ScamFlag {
+  category: 'url' | 'content' | 'behavior' | 'cognitive';
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  description: string;
+  evidence: string;
+}
+
+export class ScamDetector {
+  
+  async analyzeUrl(url: string, context: UserContext): Promise<ScamAnalysisResult> {
+    const flags: ScamFlag[] = [];
+
+    // LAYER 1: URL Analysis
+    const urlFlags = await this.analyzeUrlSafety(url);
+    flags.push(...urlFlags);
+
+    // LAYER 2: Content Analysis (if page accessible)
+    const contentFlags = await this.analyzePageContent(url);
+    flags.push(...contentFlags);
+
+    // LAYER 3: Behavioral Analysis
+    const behaviorFlags = await this.analyzeBehavioralPatterns(url, context);
+    flags.push(...behaviorFlags);
+
+    // Calculate threat level
+    const threatLevel = this.calculateThreatLevel(flags);
+    const shouldBlock = threatLevel === 'critical' || 
+                        flags.some(f => f.severity === 'critical');
+
+    return {
+      threatLevel,
+      confidence: this.calculateConfidence(flags),
+      flags,
+      shouldBlock,
+      userMessage: this.generateUserMessage(threatLevel, flags),
+      technicalDetails: this.generateTechnicalReport(flags),
+      recommendedAction: this.determineRecommendedAction(threatLevel, flags)
+    };
+  }
+
+  // LAYER 1: URL SAFETY ANALYSIS
+  private async analyzeUrlSafety(url: string): Promise<ScamFlag[]> {
+    const flags: ScamFlag[] = [];
+
+    try {
+      const urlObj = new URL(url);
+      const domain = urlObj.hostname;
+
+      // 1. Google Safe Browsing API
+      const safeBrowsingResult = await this.checkGoogleSafeBrowsing(url);
+      if (safeBrowsingResult.isThreat) {
+        flags.push({
+          category: 'url',
+          severity: 'critical',
+          description: 'This website is on Google\'s list of dangerous sites',
+          evidence: safeBrowsingResult.threatType
+        });
+      }
+
+      // 2. PhishTank Database
+      const phishTankResult = await this.checkPhishTank(url);
+      if (phishTankResult.isPhish) {
+        flags.push({
+          category: 'url',
+          severity: 'critical',
+          description: 'This website has been reported as a phishing scam',
+          evidence: `Reported ${phishTankResult.reportCount} times`
+        });
+      }
+
+      // 3. Domain Age Check
+      const domainAge = await this.checkDomainAge(domain);
+      if (domainAge < 30) { // Less than 30 days old
+        flags.push({
+          category: 'url',
+          severity: 'medium',
+          description: 'This website was created very recently',
+          evidence: `Domain registered ${domainAge} days ago`
+        });
+      }
+
+      // 4. Lookalike Domain Detection (Indian banks)
+      const lookalike = this.detectLookalikeIndianDomain(domain);
+      if (lookalike) {
+        flags.push({
+          category: 'url',
+          severity: 'critical',
+          description: `This looks like a fake version of ${lookalike.realDomain}`,
+          evidence: `Real site: ${lookalike.realDomain}, This site: ${domain}`
+        });
+      }
+
+      // 5. SSL Certificate Validation
+      if (urlObj.protocol !== 'https:') {
+        flags.push({
+          category: 'url',
+          severity: 'high',
+          description: 'This website is not secure (no padlock)',
+          evidence: 'Using HTTP instead of HTTPS'
+        });
+      }
+
+      // 6. Suspicious TLD Check
+      const suspiciousTLDs = ['.tk', '.ml', '.ga', '.cf', '.gq', '.xyz', '.top'];
+      if (suspiciousTLDs.some(tld => domain.endsWith(tld))) {
+        flags.push({
+          category: 'url',
+          severity: 'medium',
+          description: 'This website uses a domain type often used by scammers',
+          evidence: `Domain ends with ${domain.split('.').pop()}`
+        });
+      }
+
+      // 7. IP Address Instead of Domain
+      if (/^(\d{1,3}\.){3}\d{1,3}$/.test(domain)) {
+        flags.push({
+          category: 'url',
+          severity: 'high',
+          description: 'Real banks and companies never use number addresses',
+          evidence: `Using IP address: ${domain}`
+        });
+      }
+
+      // 8. Excessive Subdomains
+      const subdomains = domain.split('.');
+      if (subdomains.length > 4) {
+        flags.push({
+          category: 'url',
+          severity: 'medium',
+          description: 'This website address looks suspicious',
+          evidence: `Too many dots in address: ${domain}`
+        });
+      }
+
+    } catch (error) {
+      console.error('URL analysis error:', error);
+    }
+
+    return flags;
+  }
+
+  // LAYER 2: CONTENT ANALYSIS
+  private async analyzePageContent(url: string): Promise<ScamFlag[]> {
+    const flags: ScamFlag[] = [];
+
+    try {
+      // Fetch page content (via backend proxy to avoid CORS)
+      const response = await fetch('/api/scam/fetch-page', {
+        method: 'POST',
+        body: JSON.stringify({ url }),
+        headers: { 'Content-Type': 'application/json' }
+      });
+
+      const { html, text } = await response.json();
+
+      // 1. Urgency Language Detection
+      const urgencyPatterns = [
+        /act now/i,
+        /limited time/i,
+        /expire(s|d)? (today|soon|immediately)/i,
+        /verify (now|immediately|within)/i,
+        /suspend(ed)?.*account/i,
+        /urgent action required/i,
+        /confirm (now|immediately)/i,
+        /last chance/i,
+        /अभी करें/i, // Hindi: "do now"
+        /तुरंत/i, // Hindi: "immediately"
+      ];
+
+      const urgencyMatches = urgencyPatterns.filter(p => p.test(text));
+      if (urgencyMatches.length >= 3) {
+        flags.push({
+          category: 'content',
+          severity: 'high',
+          description: 'This page is trying to rush you into doing something',
+          evidence: `Found ${urgencyMatches.length} pressure phrases`
+        });
+      }
+
+      // 2. Sensitive Information Requests
+      const sensitiveFieldPatterns = [
+        { pattern: /cvv|security code/i, field: 'CVV/Security Code' },
+        { pattern: /pin|atm pin|card pin/i, field: 'PIN' },
+        { pattern: /aadha?r|aadhaar/i, field: 'Aadhaar Number' },
+        { pattern: /otp|one.time.password/i, field: 'OTP' },
+        { pattern: /password|pass word/i, field: 'Password' },
+        { pattern: /account.*password/i, field: 'Account Password' },
+      ];
+
+      const foundSensitiveFields = sensitiveFieldPatterns.filter(p => 
+        p.pattern.test(html) || p.pattern.test(text)
+      );
+
+      if (foundSensitiveFields.length > 0) {
+        flags.push({
+          category: 'content',
+          severity: 'critical',
+          description: 'Real banks NEVER ask for this information online',
+          evidence: `Asking for: ${foundSensitiveFields.map(f => f.field).join(', ')}`
+        });
+      }
+
+      // 3. Fake Security Badges
+      const fakeSecurityIndicators = [
+        /verified by visa/i,
+        /mastercard securecode/i,
+        /100% secure/i,
+        /bank grade security/i,
+        /ssl encrypted/i, // When actually claiming it in text (suspicious)
+      ];
+
+      const securityClaims = fakeSecurityIndicators.filter(p => p.test(text));
+      if (securityClaims.length >= 2 && !url.includes('https')) {
+        flags.push({
+          category: 'content',
+          severity: 'high',
+          description: 'This page claims to be secure but isn\'t',
+          evidence: 'Making security claims without actual HTTPS'
+        });
+      }
+
+      // 4. Prize/Money Winning Claims
+      const prizePatterns = [
+        /you('ve| have) won/i,
+        /congratulations.*prize/i,
+        /₹?\d{1,3}(,\d{3})*(\.\d{2})?\s*(lakh|crore|rupees)/i,
+        /claim (your|now)/i,
+        /lottery winner/i,
+      ];
+
+      if (prizePatterns.some(p => p.test(text))) {
+        flags.push({
+          category: 'content',
+          severity: 'critical',
+          description: 'This is a classic prize scam. You didn\'t win anything.',
+          evidence: 'Claiming you won money or prizes'
+        });
+      }
+
+      // 5. Poor Grammar/Translation (common in scams)
+      const grammarIssues = this.detectPoorGrammar(text);
+      if (grammarIssues > 5) {
+        flags.push({
+          category: 'content',
+          severity: 'medium',
+          description: 'This website has many spelling and grammar mistakes',
+          evidence: `Found ${grammarIssues} grammatical errors`
+        });
+      }
+
+      // 6. Fake Government/Bank Impersonation
+      const impersonationPatterns = [
+        { pattern: /government of india/i, realDomains: ['gov.in', 'nic.in'] },
+        { pattern: /state bank of india|sbi/i, realDomains: ['onlinesbi.sbi', 'sbi.co.in'] },
+        { pattern: /hdfc bank/i, realDomains: ['hdfcbank.com'] },
+        { pattern: /icici bank/i, realDomains: ['icicibank.com'] },
+        { pattern: /axis bank/i, realDomains: ['axisbank.com'] },
+        { pattern: /income tax|it department/i, realDomains: ['incometax.gov.in'] },
+      ];
+
+      const urlObj = new URL(url);
+      for (const imp of impersonationPatterns) {
+        if (imp.pattern.test(text) && !imp.realDomains.some(d => urlObj.hostname.includes(d))) {
+          flags.push({
+            category: 'content',
+            severity: 'critical',
+            description: 'This is a FAKE website pretending to be a real bank/government',
+            evidence: `Claims to be ${imp.pattern.source} but domain is ${urlObj.hostname}`
+          });
+        }
+      }
+
+      // 7. GPT-4 Content Analysis
+      const gptAnalysis = await this.analyzeWithGPT4(text);
+      if (gptAnalysis.isScam) {
+        flags.push({
+          category: 'content',
+          severity: gptAnalysis.severity,
+          description: gptAnalysis.reason,
+          evidence: 'AI content analysis'
+        });
+      }
+
+    } catch (error) {
+      console.error('Content analysis error:', error);
+    }
+
+    return flags;
+  }
+
+  // LAYER 3: BEHAVIORAL & COGNITIVE PATTERNS
+  private async analyzeBehavioralPatterns(
+    url: string, 
+    context: UserContext
+  ): Promise<ScamFlag[]> {
+    const flags: ScamFlag[] = [];
+
+    // 1. Unusual Access Pattern
+    if (context.referrer && this.isUnusualReferrer(context.referrer)) {
+      flags.push({
+        category: 'behavior',
+        severity: 'high',
+        description: 'You came to this page in an unusual way',
+        evidence: `Came from: ${context.referrer}`
+      });
+    }
+
+    // 2. Link from SMS/WhatsApp
+    if (context.source === 'sms' || context.source === 'whatsapp') {
+      flags.push({
+        category: 'behavior',
+        severity: 'high',
+        description: 'This link came from a message',
+        evidence: `Opened from ${context.source}`
+      });
+    }
+
+    // 3. Not in User's Known Safe List
+    const knownSafeSites = await this.getUserSafeSites(context.userId);
+    if (!knownSafeSites.includes(new URL(url).hostname)) {
+      flags.push({
+        category: 'behavior',
+        severity: 'low',
+        description: 'This is a website you haven\'t visited before',
+        evidence: 'Not in your trusted sites list'
+      });
+    }
+
+    // 4. Redirects Through Multiple Sites
+    if (context.redirectCount && context.redirectCount > 2) {
+      flags.push({
+        category: 'behavior',
+        severity: 'medium',
+        description: 'This link bounced you through multiple websites',
+        evidence: `Redirected ${context.redirectCount} times`
+      });
+    }
+
+    // 5. Shortened URL Detection
+    const shortenerDomains = [
+      'bit.ly', 'tinyurl.com', 'goo.gl', 't.co', 'ow.ly',
+      'shorturl.at', 'cutt.ly', 'rb.gy'
+    ];
+    
+    if (shortenerDomains.some(s => url.includes(s))) {
+      flags.push({
+        category: 'behavior',
+        severity: 'medium',
+        description: 'This is a shortened link hiding the real destination',
+        evidence: 'Using URL shortener service'
+      });
+    }
+
+    return flags;
+  }
+
+  // GPT-4 CONTENT ANALYSIS
+  private async analyzeWithGPT4(pageText: string): Promise<{
+    isScam: boolean;
+    severity: 'low' | 'medium' | 'high' | 'critical';
+    reason: string;
+  }> {
+    try {
+      const response = await openai.chat.completions.create({
+        model: "gpt-4",
+        messages: [{
+          role: "system",
+          content: `You are a scam detection expert protecting elderly Indian users.
+          
+Analyze the following webpage text for scam indicators:
+- Urgency/pressure tactics
+- Requests for sensitive information
+- Prize/lottery claims
+- Impersonation of banks/government
+- Poor grammar suggesting foreign scammers
+- Emotional manipulation
+
+Respond ONLY with valid JSON:
+{
+  "isScam": boolean,
+  "confidence": 0-1,
+  "severity": "low" | "medium" | "high" | "critical",
+  "reason": "one clear sentence explanation for elderly user"
+}`
+        }, {
+          role: "user",
+          content: pageText.slice(0, 3000) // First 3000 chars
+        }],
+        temperature: 0.2,
+        response_format: { type: "json_object" }
+      });
+
+      const result = JSON.parse(response.choices[0].message.content || '{}');
+      return {
+        isScam: result.isScam || false,
+        severity: result.severity || 'low',
+        reason: result.reason || 'AI analysis flagged suspicious content'
+      };
+    } catch (error) {
+      console.error('GPT-4 analysis error:', error);
+      return { isScam: false, severity: 'low', reason: '' };
+    }
+  }
+
+  // INDIAN BANK LOOKALIKE DETECTION
+  private detectLookalikeIndianDomain(domain: string): {
+    realDomain: string;
+    similarity: number;
+  } | null {
+    const legitimateBanks = [
+      { name: 'State Bank of India', domains: ['onlinesbi.sbi', 'sbi.co.in'] },
+      { name: 'HDFC Bank', domains: ['hdfcbank.com'] },
+      { name: 'ICICI Bank', domains: ['icicibank.com'] },
+      { name: 'Axis Bank', domains: ['axisbank.com'] },
+      { name: 'Kotak Mahindra', domains: ['kotak.com'] },
+      { name: 'Punjab National Bank', domains: ['pnbindia.in'] },
+      { name: 'Bank of Baroda', domains: ['bankofbaroda.in'] },
+      { name: 'Canara Bank', domains: ['canarabank.com'] },
+    ];
+
+    for (const bank of legitimateBanks) {
+      for (const legitDomain of bank.domains) {
+        // Check for common tricks
+        const tricks = [
+          domain.replace('i', 'l'), // i -> l
+          domain.replace('l', 'i'), // l -> i
+          domain.replace('o', '0'), // o -> 0
+          domain.replace('0', 'o'), // 0 -> o
+          domain.replace(/bank/i, 'banak'),
+          domain.replace(/bank/i, 'banq'),
+        ];
+
+        if (tricks.some(t => t.includes(legitDomain.replace('.', ''))) || 
+            this.levenshteinDistance(domain, legitDomain) <= 2) {
+          return {
+            realDomain: legitDomain,
+            similarity: this.levenshteinDistance(domain, legitDomain)
+          };
+        }
+      }
+    }
+
+    return null;
+  }
+
+  // CALCULATE OVERALL THREAT LEVEL
+  private calculateThreatLevel(flags: ScamFlag[]): ScamAnalysisResult['threatLevel'] {
+    if (flags.some(f => f.severity === 'critical')) return 'critical';
+    
+    const highCount = flags.filter(f => f.severity === 'high').length;
+    const mediumCount = flags.filter(f => f.severity === 'medium').length;
+    
+    if (highCount >= 2) return 'danger';
+    if (highCount >= 1 || mediumCount >= 3) return 'warning';
+    
+    return 'safe';
+  }
+
+  // GENERATE USER-FRIENDLY MESSAGE
+  private generateUserMessage(
+    threatLevel: ScamAnalysisResult['threatLevel'],
+    flags: ScamFlag[]
+  ): string {
+    const messages = {
+      safe: "This website looks safe. ✅",
+      warning: "Be careful with this website. I noticed some warning signs. 🟡",
+      danger: "This website looks dangerous. I strongly recommend not continuing. 🔴",
+      critical: "STOP! This is very likely a scam. Do not enter any information. 🛑"
+    };
+
+    let message = messages[threatLevel];
+
+    // Add specific concerns
+    const topFlags = flags
+      .sort((a, b) => {
+        const severityOrder = { critical: 4, high: 3, medium: 2, low: 1 };
+        return severityOrder[b.severity] - severityOrder[a.severity];
+      })
+      .slice(0, 3);
+
+    if (topFlags.length > 0) {
+      message += "\n\nHere's what I found:\n";
+      topFlags.forEach((flag, i) => {
+        message += `\n${i + 1}. ${flag.description}`;
+      });
+    }
+
+    return message;
+  }
+
+  // UTILITY: Levenshtein Distance (string similarity)
+  private levenshteinDistance(str1: string, str2: string): number {
+    const matrix: number[][] = [];
+
+    for (let i = 0; i <= str2.length; i++) {
+      matrix[i] = [i];
+    }
+
+    for (let j = 0; j <= str1.length; j++) {
+      matrix[0][j] = j;
+    }
+
+    for (let i = 1; i <= str2.length; i++) {
+      for (let j = 1; j <= str1.length; j++) {
+        if (str2.charAt(i - 1) === str1.charAt(j - 1)) {
+          matrix[i][j] = matrix[i - 1][j - 1];
+        } else {
+          matrix[i][j] = Math.min(
+            matrix[i - 1][j - 1] + 1,
+            matrix[i][j - 1] + 1,
+            matrix[i - 1][j] + 1
+          );
+        }
+      }
+    }
+
+    return matrix[str2.length][str1.length];
+  }
+
+  private detectPoorGrammar(text: string): number {
+    // Simple heuristic: look for common errors
+    let issues = 0;
+    
+    // Multiple spaces
+    issues += (text.match(/\s{2,}/g) || []).length;
+    
+    // Missing spaces after punctuation
+    issues += (text.match(/[.!?][A-Z]/g) || []).length;
+    
+    // Excessive punctuation
+    issues += (text.match(/[!?]{2,}/g) || []).length;
+    
+    // ALL CAPS SENTENCES
+    const sentences = text.split(/[.!?]+/);
+    issues += sentences.filter(s => s.length > 20 && s === s.toUpperCase()).length;
+    
+    return issues;
+  }
+
+  private async getUserSafeSites(userId: string): Promise<string[]> {
+    // Fetch from database
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      include: { safeSites: true }
+    });
+    
+    return user?.safeSites.map(s => s.domain) || [];
+  }
+
+  private isUnusualReferrer(referrer: string): boolean {
+    // Check if came from suspicious sources
+    const suspiciousPatterns = [
+      /telegram/i,
+      /discord/i,
+      /tiktok/i,
+      /unknown/i,
+    ];
+    
+    return suspiciousPatterns.some(p => p.test(referrer));
+  }
+}

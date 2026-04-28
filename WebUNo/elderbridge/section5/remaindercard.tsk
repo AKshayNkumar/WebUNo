@@ -1,0 +1,85 @@
+'use client';
+
+import { motion } from 'framer-motion';
+import { Volume2, Check, Clock } from 'lucide-react';
+import { useSpeechSynthesis } from '@/hooks/use-speech-synthesis';
+
+interface Reminder {
+  id: string;
+  type: 'medicine' | 'bill' | 'appointment' | 'call';
+  title: string;
+  subtitle?: string;
+  time?: string;
+  urgent: boolean;
+}
+
+interface ReminderCardProps {
+  reminder: Reminder;
+}
+
+const typeConfig = {
+  medicine: { emoji: '💊', color: 'border-elder-success', bgColor: 'bg-elder-success/5' },
+  bill: { emoji: '💡', color: 'border-elder-warning', bgColor: 'bg-elder-warning/5' },
+  appointment: { emoji: '🏥', color: 'border-elder-primary', bgColor: 'bg-elder-primary/5' },
+  call: { emoji: '📞', color: 'border-elder-primary', bgColor: 'bg-elder-primary/5' },
+};
+
+export function ReminderCard({ reminder }: ReminderCardProps) {
+  const { speak } = useSpeechSynthesis();
+  const config = typeConfig[reminder.type];
+
+  const handleReadAloud = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const text = `${reminder.title}${reminder.subtitle ? '. ' + reminder.subtitle : ''}${reminder.time ? '. At ' + reminder.time : ''}`;
+    speak(text);
+  };
+
+  const handleComplete = () => {
+    // Mark reminder as complete
+    speak('Reminder marked as complete');
+  };
+
+  const handleSnooze = () => {
+    // Snooze reminder
+    speak('I will remind you again in 30 minutes');
+  };
+
+  return (
+    <motion.div
+      className={`
+        relative w-full
+        bg-white rounded-2xl
+        border-l-[6px] ${config.color}
+        ${config.bgColor}
+        shadow-elder-card
+        p-6
+      `}
+      animate={reminder.urgent ? { 
+        boxShadow: [
+          '0 4px 6px rgba(0,0,0,0.1)',
+          '0 8px 12px rgba(204,0,0,0.2)',
+          '0 4px 6px rgba(0,0,0,0.1)',
+        ]
+      } : {}}
+      transition={{ repeat: reminder.urgent ? Infinity : 0, duration: 2 }}
+    >
+      <div className="flex items-start gap-4 mb-4">
+        {/* Icon */}
+        <div className="text-[48px] flex-shrink-0">
+          {config.emoji}
+        </div>
+
+        {/* Content */}
+        <div className="flex-1">
+          <h3 className="text-[26px] font-bold text-primary-text leading-tight mb-1">
+            {reminder.title}
+          </h3>
+          {reminder.subtitle && (
+            <p className="text-[22px] text-secondary-text font-semibold">
+              {reminder.subtitle}
+            </p>
+          )}
+          {reminder.time && (
+            <div className="flex items-center gap-2 mt-2">
+              <Clock className="w-5 h-5 text-secondary-text" />
+              
