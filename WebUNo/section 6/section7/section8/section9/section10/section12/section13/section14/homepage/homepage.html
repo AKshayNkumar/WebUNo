@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ElderBridge - Where Care Meets Connection</title>
+    <style>
+        /* --- 1. CORE VIBE & VARIABLES --- */
+        :root {
+            --bg-gradient: linear-gradient(135deg, #FFF5E4 0%, #FFECD2 100%);
+            --primary-text: #5D5D5D;
+            --accent-green: #8DB596;
+            --accent-coral: #F4A896;
+            --accent-blue: #A7C7E7;
+            --card-bg: rgba(255, 255, 255, 0.7);
+            --font-main: 'Nunito', 'Quicksand', sans-serif;
+        }
+
+        @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;700&family=Quicksand:wght@500;700&display=swap');
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: var(--font-main);
+            background: var(--bg-gradient);
+            color: var(--primary-text);
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+
+        /* --- 2. FLOATING ANIMATIONS --- */
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-15px); }
+            100% { transform: translateY(0px); }
+        }
+
+        @keyframes drift {
+            0% { transform: translateX(0px); }
+            50% { transform: translateX(10px); }
+            100% { transform: translateX(0px); }
+        }
+
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* --- 3. NAVIGATION (Pill Shape) --- */
+        nav {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
+            padding: 15px 30px;
+            border-radius: 50px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            z-index: 1000;
+            display: flex;
+            gap: 25px;
+            animation: fadeUp 1s ease-out;
+        }
+
+        nav a {
+            text-decoration: none;
+            color: var(--primary-text);
+            font-weight: 700;
+            font-size: 1.1rem;
+            transition: color 0.3s;
+        }
+
+        nav a:hover {
+            color: var(--accent-green);
+        }
+
+        /* --- 4. HERO SECTION --- */
+        .hero {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            position: relative;
+            padding: 20px;
+        }
+
+        h1 {
+            font-size: 3.5rem;
+            margin-bottom: 10px;
+            color: #4A4A4A;
+            animation: fadeUp 1.2s ease-out;
+        }
+
+        p.subtitle {
+            font-size: 1.5rem;
+            margin-bottom: 40px;
+            color: #777;
+            animation: fadeUp 1.4s ease-out;
+        }
+
+        /* --- 5. BUTTONS --- */
+        .btn-group {
+            display: flex;
+            gap: 20px;
+            animation: fadeUp 1.6s ease-out;
+        }
+
+        .btn {
+            padding: 18px 40px;
+            border-radius: 50px;
+            font-size: 1.2rem;
+            font-weight: 700;
+            border: none;
+            cursor: pointer;
+            transition: transform 0.3s, box-shadow 0.3s;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background: var(--accent-green);
+            color: white;
+            box-shadow: 0 5px 15px rgba(141, 181, 150, 0.4);
+        }
+
+        .btn-secondary {
+            background: white;
+            color: var(--primary-text);
+            border: 2px solid var(--accent-coral);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+        }
+
+        .btn:hover {
+            transform: scale(1.05);
+        }
+
+        /* --- 6. FLOATING CHARACTERS (CSS Art/Emojis for Demo) --- */
+        .character {
+            position: absolute;
+            font-size: 5rem;
+            filter: drop-shadow(0 10px 10px rgba(0,0,0,0.1));
+        }
+
+        .char-left {
+            left: 10%;
+            top: 30%;
+            animation: float 6s ease-in-out infinite;
+        }
+
+        .char-right {
+            right: 10%;
+            top: 40%;
+            animation: float 7s ease-in-out infinite reverse;
+        }
+
+        .cloud {
+            position: absolute;
+            font-size: 4rem;
+            opacity: 0.6;
+            animation: drift 8s ease-in-out infinite;
+        }
+
+        .cloud-1 { top: 15%; left: 20%; }
+        .cloud-2 { top: 25%; right: 25%; animation-duration: 10s; }
+
+        /* --- 7. CARDS SECTION --- */
+        .cards-section {
+            padding: 80px 20px;
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            flex-wrap: wrap;
+        }
+
+        .card {
+            background: var(--card-bg);
+            backdrop-filter: blur(5px);
+            padding: 40px;
+            border-radius: 30px;
+            width: 300px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+            transition: transform 0.3s;
+            border: 1px solid rgba(255,255,255,0.5);
+        }
+
+        .card:hover {
+            transform: translateY(-10px);
+        }
+
+        .card h3 {
+            font-size: 1.8rem;
+            margin-bottom: 15px;
+            color: var(--accent-green);
+        }
+
+        .card p {
+            font-size: 1.1rem;
+            line-height: 1.6;
+        }
+
+        /* --- 8. ACCESSIBILITY TOGGLE --- */
+        .a11y-toggle {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: var(--accent-coral);
+            color: white;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            box-shadow: 0 5px 20px rgba(244, 168, 150, 0.5);
+            cursor: pointer;
+            z-index: 1000;
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- Floating Navigation -->
+    <nav>
+        <a href="#">Home</a>
+        <a href="#">Services</a>
+        <a href="#">Community</a>
+        <a href="#">Help</a>
+        <a href="#">Contact</a>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <!-- Floating Elements -->
+        <div class="cloud cloud-1">☁️</div>
+        <div class="cloud cloud-2">☁️</div>
+        
+        <!-- Characters (Using Emojis for Demo, replace with SVG/PNG later) -->
+        <div class="character char-left">👵🌻</div>
+        <div class="character char-right">👴📖</div>
+
+        <h1>Welcome to ElderBridge</h1>
+        <p class="subtitle">Where care meets connection.</p>
+        
+        <div class="btn-group">
+            <a href="#" class="btn btn-primary">Start Your Journey</a>
+            <a href="#" class="btn btn-secondary">Talk to Us</a>
+        </div>
+    </section>
+
+    <!-- Cards Section -->
+    <section class="cards-section">
+        <div class="card">
+            <h3>🤝 Community</h3>
+            <p>Join gentle conversations with friends who understand you.</p>
+        </div>
+        <div class="card">
+            <h3>🌿 Wellness</h3>
+            <p>Daily tips for a calm mind and a healthy body.</p>
+        </div>
+        <div class="card">
+            <h3>🫖 Support</h3>
+            <p>Real humans ready to help, anytime you need.</p>
+        </div>
+    </section>
+
+    <!-- Accessibility Helper -->
+    <div class="a11y-toggle" onclick="alert('Text size increased!')" title="Increase Text Size">
+        A+
+    </div>
+
+    <script>
+        // Simple Interaction: Add a gentle sound effect on button hover (Optional)
+        const buttons = document.querySelectorAll('.btn');
+        
+        buttons.forEach(btn => {
+            btn.addEventListener('mouseenter', () => {
+                // In a real app, play a soft 'pop' sound here
+                console.log('Soft hover effect');
+            });
+        });
+
+        // Smooth Scroll for Nav
+        document.querySelectorAll('nav a').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                // Smooth scroll logic would go here
+            });
+        });
+    </script>
+</body>
+</html>
