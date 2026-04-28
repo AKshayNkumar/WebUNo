@@ -1,0 +1,351 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ═══════════════════════════════════════
+// USER MANAGEMENT
+// ═══════════════════════════════════════
+
+model User {
+  id        String   @id @default(uuid())
+  role      UserRole
+  fullName  String
+  phone     String?  @unique
+  email     String?  @unique
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Preferences
+  preferredLanguage  String  @default("en")
+  fontSizePreference Int     @default(26)
+  speechRate         Decimal @default(0.8)
+  voiceGender        String  @default("female")
+
+  // Relationships (when user is senior)
+  guardians          SeniorGuardianLink[] @relation("SeniorToGuardians")
+  playbooks          Playbook[]
+  activityLogs       ActivityLog[]
+  memoryCards        MemoryCard[]
+  confidenceScores   ConfidenceScore[]
+  medicines          Medicine[]
+  scamAttempts       ScamAttempt[]
+  guardianSessions   GuardianSession[]    @relation("SeniorSessions")
+  safeSites          SafeSite[]
+
+  // Relationships (when user is guardian)
+  seniorLinks        SeniorGuardianLink[] @relation("GuardianToSeniors")
+  helpSessionsGiven  GuardianSession[]    @relation("GuardianSessions")
+
+  @@index([email])
+  @@index([phone])
+}
+
+enum UserRole {
+  senior
+  guardian
+}
+
+model SeniorGuardianLink {
+  seniorId   String
+  guardianId String
+  senior     User    @relation("SeniorToGuardians", fields: [seniorId], references: [id], onDelete: Cascade)
+  guardian   User    @relation("GuardianToSeniors", fields: [guardianId], references: [id], onDelete: Cascade)
+
+  relationship             String // 'daughter', 'son', 'caregiver'
+  isPrimary                Boolean @default(false)
+  notificationPreferences  Json? // { email: true, sms: true, push: true }
+  createdAt                DateTime @default(now())
+
+  @@id([seniorId, guardianId])
+  @@index([seniorId])
+  @@index([guardianId])
+}
+
+// ═══════════════════════════════════════
+// PLAYBOOK SYSTEM
+// ═══════════════════════════════════════
+
+model Playbook {
+  id              String   @id @default(uuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  name            String // "Pay Electricity Bill"
+  description     String?
+  triggerPhrases  String[] // ["pay electricity", "pay mseb"]
+  category        String? // 'bills', 'banking', 'communication'
+  
+  steps           PlaybookStep[]
+  
+  lastUsed        DateTime?
+  useCount        Int      @default(0)
+  createdBy       String // 'senior' or 'guardian'
+  isVerified      Boolean  @default(false)
+  isPublic        Boolean  @default(false) // Can other users use this?
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([userId])
+  @@index([category])
+}
+
+model PlaybookStep {
+  id             String   @id @default(uuid())
+  playbookId     String
+  playbook       Playbook @relation(fields: [playbookId], references: [id], onDelete: Cascade)
+  
+  stepNumber     Int
+  instructionText String // "Click the blue 'Pay Now' button"
+  instructionAudioUrl String? // Pre-generated TTS
+  
+  targetSelector String? // CSS selector
+  targetUrlPattern String? // URL pattern this step applies to
+  
+  actionType     StepActionType
+  preFilledValue String? // Stored value for auto-fill
+  
+  screenshotUrl  String? // Visual reference
+  isSensitive    Boolean @default(false)
+  
+  createdAt      DateTime @default(now())
+
+  @@index([playbookId])
+  @@unique([playbookId, stepNumber])
+}
+
+enum StepActionType {
+  click
+  type
+  navigate
+  wait
+  verify
+  voice_command
+}
+
+// ═══════════════════════════════════════
+// ACTIVITY TRACKING
+// ═══════════════════════════════════════
+
+model ActivityLog {
+  id                String   @id @default(uuid())
+  userId            String
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  actionType        String // 'pay_bill', 'check_balance', etc.
+  actionDescription String
+  websiteUrl        String?
+  
+  durationSeconds   Int
+  attemptCount      Int      @default(1)
+  succeeded         Boolean
+  
+  wasGuided         Boolean  @default(false) // Used playbook or guardian
+  sandboxPracticedFirst Boolean @default(false)
+  
+  metadata          Json? // Additional context
+  timestamp         DateTime @default(now())
+
+  @@index([userId])
+  @@index([timestamp])
+  @@index([actionType])
+}
+
+model MemoryCard {
+  id              String   @id @default(uuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  activityLogId   String? // Link to specific activity
+  narrativeText   String // GPT-4 generated warm narrative
+  cardImageUrl    String? // Generated polaroid image
+  skillBadge      String // 'growing', 'getting_stronger', 'independent'
+  
+  includedInDigest Boolean @default(false)
+  digestDate       DateTime?
+  
+  createdAt       DateTime @default(now())
+
+  @@index([userId])
+  @@index([createdAt])
+}
+
+model ConfidenceScore {
+  id           String   @id @default(uuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  score        Int // 0-100
+  levelName    String // 'just_starting', 'getting_comfortable', etc.
+  breakdown    Json // Component scores
+  
+  calculatedAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([calculatedAt])
+}
+
+// ═══════════════════════════════════════
+// SCAM PROTECTION
+// ═══════════════════════════════════════
+
+model ScamAttempt {
+  id                String   @id @default(uuid())
+  userId            String
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  url               String
+  pageTitle         String?
+  
+  cognitiveAnswer   String? // 'phone_call', 'found_myself', 'not_sure'
+  threatLevel       String // 'safe', 'warning', 'danger', 'critical'
+  flags             Json // Array of ScamFlag objects
+  
+  blocked           Boolean
+  guardianAlerted   Boolean @default(false)
+  
+  timestamp         DateTime @default(now())
+
+  @@index([userId])
+  @@index([timestamp])
+  @@index([blocked])
+}
+
+model SafeSite {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  domain    String
+  siteName  String?
+  addedBy   String // 'senior', 'guardian', 'system'
+  
+  createdAt DateTime @default(now())
+
+  @@unique([userId, domain])
+  @@index([userId])
+}
+
+// ═══════════════════════════════════════
+// GUARDIAN ASSISTANCE
+// ═══════════════════════════════════════
+
+model GuardianSession {
+  id              String   @id @default(uuid())
+  seniorId        String
+  senior          User     @relation("SeniorSessions", fields: [seniorId], references: [id], onDelete: Cascade)
+  
+  guardianId      String
+  guardian        User     @relation("GuardianSessions", fields: [guardianId], references: [id], onDelete: Cascade)
+  
+  sessionType     String // 'live', 'async'
+  issueDescription String?
+  resolved        Boolean  @default(false)
+  
+  recordingUrl    String? // For async sessions
+  annotationCount Int      @default(0)
+  
+  startedAt       DateTime @default(now())
+  endedAt         DateTime?
+
+  @@index([seniorId])
+  @@index([guardianId])
+  @@index([startedAt])
+}
+
+// ═══════════════════════════════════════
+// HEALTHCARE MODULE
+// ═══════════════════════════════════════
+
+model Medicine {
+  id                String   @id @default(uuid())
+  userId            String
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  medicineName      String
+  dosage            String
+  frequencyType     String // 'daily', 'twice_daily', 'weekly', 'as_needed'
+  reminderTimes     String[] // ["09:00", "21:00"]
+  
+  startDate         DateTime
+  endDate           DateTime?
+  
+  refillAlertDays   Int      @default(7)
+  pillsRemaining    Int?
+  
+  prescribingDoctor String?
+  notes             String?
+  
+  imageUrl          String? // Photo of medicine label
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  adherenceRecords  MedicineAdherence[]
+
+  @@index([userId])
+}
+
+model MedicineAdherence {
+  id          String   @id @default(uuid())
+  medicineId  String
+  medicine    Medicine @relation(fields: [medicineId], references: [id], onDelete: Cascade)
+  
+  scheduledTime DateTime
+  takenAt       DateTime?
+  skipped       Boolean  @default(false)
+  skipReason    String?
+  
+  createdAt     DateTime @default(now())
+
+  @@index([medicineId])
+  @@index([scheduledTime])
+}
+
+// ═══════════════════════════════════════
+// DIGEST & NOTIFICATIONS
+// ═══════════════════════════════════════
+
+model WeeklyDigest {
+  id         String   @id @default(uuid())
+  userId     String
+  
+  weekStart  DateTime
+  weekEnd    DateTime
+  
+  emailSent  Boolean  @default(false)
+  sentAt     DateTime?
+  resendId   String?
+  
+  createdAt  DateTime @default(now())
+
+  @@index([userId])
+  @@index([weekStart])
+}
+
+model Notification {
+  id         String   @id @default(uuid())
+  userId     String
+  
+  type       String // 'scam_alert', 'help_request', 'reminder'
+  title      String
+  message    String
+  priority   String // 'low', 'medium', 'high', 'critical'
+  
+  read       Boolean  @default(false)
+  actionUrl  String?
+  
+  createdAt  DateTime @default(now())
+
+  @@index([userId])
+  @@index([createdAt])
+  @@index([read])
+}

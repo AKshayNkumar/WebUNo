@@ -1,0 +1,457 @@
+// /emails/WeeklyDigest.tsx
+
+import {
+  Body,
+  Container,
+  Head,
+  Heading,
+  Html,
+  Img,
+  Preview,
+  Section,
+  Text,
+  Hr,
+  Row,
+  Column,
+} from '@react-email/components';
+
+interface WeeklyDigestProps {
+  seniorName: string;
+  guardianName: string;
+  weekStart: string;
+  weekEnd: string;
+  highlights: {
+    biggestAchievement: string;
+    newSkillsLearned: string[];
+    funnyMoment?: string;
+    confidenceScore: number;
+    confidenceChange: number;
+  };
+  activities: Array<{
+    date: string;
+    action: string;
+    success: boolean;
+    timeSpent: number;
+  }>;
+  scamsBlocked: number;
+  helpRequests: number;
+  nextGoals: string[];
+  actionItems: string[];
+}
+
+export default function WeeklyDigest({
+  seniorName = 'Kamala',
+  guardianName = 'Priya',
+  weekStart = 'May 27',
+  weekEnd = 'June 2',
+  highlights,
+  activities,
+  scamsBlocked = 0,
+  helpRequests = 0,
+  nextGoals = [],
+  actionItems = []
+}: WeeklyDigestProps) {
+  
+  return (
+    <Html>
+      <Head />
+      <Preview>
+        {seniorName}'s digital week: {highlights.biggestAchievement} 🌟
+      </Preview>
+      
+      <Body style={main}>
+        <Container style={container}>
+          
+          {/* Header */}
+          <Section style={header}>
+            <Text style={headerEmoji}>🌉</Text>
+            <Heading style={headerTitle}>
+              {seniorName}'s Digital Week
+            </Heading>
+            <Text style={headerSubtitle}>
+              {weekStart} – {weekEnd}
+            </Text>
+          </Section>
+
+          {/* Greeting */}
+          <Section style={section}>
+            <Text style={greeting}>
+              Dear {guardianName},
+            </Text>
+            <Text style={paragraph}>
+              What a wonderful week! {seniorName} has been actively learning 
+              and growing more confident online. Here's everything that happened 
+              this week.
+            </Text>
+          </Section>
+
+          {/* Highlight of the Week */}
+          <Section style={highlightBox}>
+            <Text style={highlightIcon}>🌟</Text>
+            <Heading as="h2" style={highlightHeading}>
+              Highlight of the Week
+            </Heading>
+            <Text style={highlightText}>
+              {highlights.biggestAchievement}
+            </Text>
+          </Section>
+
+          {/* Stats Grid */}
+          <Section style={statsSection}>
+            <Row>
+              <Column style={statBox}>
+                <Text style={statEmoji}>📈</Text>
+                <Text style={statValue}>
+                  {highlights.confidenceScore}/100
+                </Text>
+                <Text style={statLabel}>Confidence Score</Text>
+                <Text style={statChange(highlights.confidenceChange)}>
+                  {highlights.confidenceChange > 0 ? '+' : ''}
+                  {highlights.confidenceChange} from last week
+                </Text>
+              </Column>
+              
+              <Column style={statBox}>
+                <Text style={statEmoji}>🛡️</Text>
+                <Text style={statValue}>{scamsBlocked}</Text>
+                <Text style={statLabel}>Scams Blocked</Text>
+                <Text style={statChange(0)}>
+                  Kept {seniorName} safe
+                </Text>
+              </Column>
+            </Row>
+          </Section>
+
+          {/* New Skills Learned */}
+          {highlights.newSkillsLearned.length > 0 && (
+            <Section style={section}>
+              <Heading as="h2" style={sectionHeading}>
+                🌿 What {seniorName} Learned This Week
+              </Heading>
+              {highlights.newSkillsLearned.map((skill, index) => (
+                <Text key={index} style={listItem}>
+                  ✓ {skill}
+                </Text>
+              ))}
+            </Section>
+          )}
+
+          {/* Funny/Sweet Moment */}
+          {highlights.funnyMoment && (
+            <Section style={funnyMomentBox}>
+              <Text style={funnyMomentIcon}>😊</Text>
+              <Text style={funnyMomentText}>
+                {highlights.funnyMoment}
+              </Text>
+            </Section>
+          )}
+
+          {/* Recent Activities */}
+          <Section style={section}>
+            <Heading as="h2" style={sectionHeading}>
+              📋 This Week's Activities
+            </Heading>
+            {activities.map((activity, index) => (
+              <Section key={index} style={activityItem}>
+                <Text style={activityDate}>{activity.date}</Text>
+                <Text style={activityAction}>
+                  {activity.success ? '✅' : '🔄'} {activity.action}
+                </Text>
+                <Text style={activityTime}>
+                  {Math.floor(activity.timeSpent / 60)} minutes
+                </Text>
+              </Section>
+            ))}
+          </Section>
+
+          {/* Progress Bar Visual */}
+          <Section style={section}>
+            <Heading as="h2" style={sectionHeading}>
+              🎯 Working Toward
+            </Heading>
+            {nextGoals.map((goal, index) => (
+              <Text key={index} style={goalItem}>
+                → {goal}
+              </Text>
+            ))}
+          </Section>
+
+          {/* Action Items for Guardian */}
+          {actionItems.length > 0 && (
+            <Section style={actionItemsBox}>
+              <Heading as="h2" style={actionItemsHeading}>
+                👉 You Can Help By:
+              </Heading>
+              {actionItems.map((item, index) => (
+                <Text key={index} style={actionItem}>
+                  {index + 1}. {item}
+                </Text>
+              ))}
+            </Section>
+          )}
+
+          <Hr style={divider} />
+
+          {/* Footer */}
+          <Section style={footer}>
+            <Text style={footerText}>
+              Keep encouraging {seniorName}! Every small step builds their 
+              digital confidence. 💪
+            </Text>
+            <Text style={footerText}>
+              With care,<br />
+              <strong>The ElderBridge Team</strong>
+            </Text>
+            <Text style={footerLinks}>
+              <a href="https://app.elderbridge.app/dashboard" style={link}>
+                View Full Dashboard
+              </a>
+              {' • '}
+              <a href="https://app.elderbridge.app/settings" style={link}>
+                Update Settings
+              </a>
+            </Text>
+          </Section>
+        </Container>
+      </Body>
+    </Html>
+  );
+}
+
+// Styles
+const main = {
+  backgroundColor: '#F3F4F6',
+  fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+};
+
+const container = {
+  backgroundColor: '#ffffff',
+  margin: '40px auto',
+  padding: '40px 20px',
+  maxWidth: '600px',
+  borderRadius: '16px',
+  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+};
+
+const header = {
+  textAlign: 'center' as const,
+  marginBottom: '32px',
+  padding: '32px 20px',
+  background: 'linear-gradient(135deg, #DBEAFE 0%, #EEF2FF 100%)',
+  borderRadius: '12px',
+};
+
+const headerEmoji = {
+  fontSize: '64px',
+  margin: '0 0 16px 0',
+};
+
+const headerTitle = {
+  fontSize: '32px',
+  fontWeight: '700',
+  color: '#1A1A1A',
+  margin: '0 0 8px 0',
+};
+
+const headerSubtitle = {
+  fontSize: '18px',
+  color: '#666666',
+  margin: '0',
+};
+
+const section = {
+  marginBottom: '32px',
+};
+
+const greeting = {
+  fontSize: '20px',
+  fontWeight: '600',
+  color: '#1A1A1A',
+  marginBottom: '12px',
+};
+
+const paragraph = {
+  fontSize: '16px',
+  lineHeight: '1.6',
+  color: '#444444',
+  margin: '0',
+};
+
+const highlightBox = {
+  textAlign: 'center' as const,
+  padding: '32px',
+  background: 'linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%)',
+  borderRadius: '12px',
+  marginBottom: '32px',
+};
+
+const highlightIcon = {
+  fontSize: '48px',
+  margin: '0 0 12px 0',
+};
+
+const highlightHeading = {
+  fontSize: '24px',
+  fontWeight: '700',
+  color: '#92400E',
+  margin: '0 0 12px 0',
+};
+
+const highlightText = {
+  fontSize: '20px',
+  lineHeight: '1.5',
+  color: '#78350F',
+  margin: '0',
+  fontWeight: '600',
+};
+
+const statsSection = {
+  marginBottom: '32px',
+};
+
+const statBox = {
+  textAlign: 'center' as const,
+  padding: '24px',
+  backgroundColor: '#F9FAFB',
+  borderRadius: '8px',
+  margin: '0 8px',
+};
+
+const statEmoji = {
+  fontSize: '36px',
+  margin: '0 0 8px 0',
+};
+
+const statValue = {
+  fontSize: '32px',
+  fontWeight: '700',
+  color: '#1A1A1A',
+  margin: '0 0 4px 0',
+};
+
+const statLabel = {
+  fontSize: '14px',
+  color: '#666666',
+  margin: '0 0 8px 0',
+};
+
+const statChange = (change: number) => ({
+  fontSize: '12px',
+  color: change > 0 ? '#1A7340' : change < 0 ? '#CC0000' : '#666666',
+  margin: '0',
+});
+
+const sectionHeading = {
+  fontSize: '20px',
+  fontWeight: '700',
+  color: '#1A1A1A',
+  marginBottom: '16px',
+};
+
+const listItem = {
+  fontSize: '16px',
+  color: '#444444',
+  margin: '8px 0',
+  paddingLeft: '8px',
+};
+
+const funnyMomentBox = {
+  padding: '24px',
+  backgroundColor: '#EEF2FF',
+  borderLeft: '4px solid #1A56DB',
+  borderRadius: '8px',
+  marginBottom: '32px',
+};
+
+const funnyMomentIcon = {
+  fontSize: '32px',
+  margin: '0 0 8px 0',
+};
+
+const funnyMomentText = {
+  fontSize: '16px',
+  lineHeight: '1.6',
+  color: '#1e40af',
+  margin: '0',
+  fontStyle: 'italic',
+};
+
+const activityItem = {
+  padding: '16px',
+  backgroundColor: '#F9FAFB',
+  borderRadius: '8px',
+  marginBottom: '8px',
+};
+
+const activityDate = {
+  fontSize: '12px',
+  color: '#999999',
+  margin: '0 0 4px 0',
+};
+
+const activityAction = {
+  fontSize: '16px',
+  fontWeight: '600',
+  color: '#1A1A1A',
+  margin: '0 0 4px 0',
+};
+
+const activityTime = {
+  fontSize: '14px',
+  color: '#666666',
+  margin: '0',
+};
+
+const goalItem = {
+  fontSize: '16px',
+  color: '#444444',
+  margin: '8px 0',
+  paddingLeft: '8px',
+};
+
+const actionItemsBox = {
+  padding: '24px',
+  backgroundColor: '#DBEAFE',
+  borderRadius: '8px',
+  marginBottom: '32px',
+};
+
+const actionItemsHeading = {
+  fontSize: '18px',
+  fontWeight: '700',
+  color: '#1A56DB',
+  marginBottom: '12px',
+};
+
+const actionItem = {
+  fontSize: '16px',
+  color: '#1e40af',
+  margin: '8px 0',
+};
+
+const divider = {
+  borderColor: '#E5E7EB',
+  margin: '32px 0',
+};
+
+const footer = {
+  textAlign: 'center' as const,
+};
+
+const footerText = {
+  fontSize: '14px',
+  lineHeight: '1.6',
+  color: '#666666',
+  margin: '12px 0',
+};
+
+const footerLinks = {
+  fontSize: '14px',
+  color: '#666666',
+  margin: '16px 0',
+};
+
+const link = {
+  color: '#1A56DB',
+  textDecoration: 'none',
+};

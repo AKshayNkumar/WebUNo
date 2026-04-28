@@ -1,13 +1,34 @@
 "use client";
 
 import React from "react";
-import { Phone, MessageCircle, Shield, Users, AlertTriangle } from "lucide-react";
+import { motion } from "framer-motion";
 import { BottomNavigation } from "@/components/layout/BottomNavigation";
+import { Phone, Shield, ClipboardList, Globe, Mail, Video, BookOpen, AlertTriangle } from "lucide-react";
 
-const contacts = [
-  { name: "Priya (Daughter)",  phone: "+91 98765 43210", color: "#8B4000", bg: "#FFF8F0", emoji: "👩" },
-  { name: "Raj (Son)",         phone: "+91 87654 32109", color: "#1A56DB", bg: "#EBF2FF", emoji: "👨" },
-  { name: "Dr. Sharma",        phone: "+91 76543 21098", color: "#1A7340", bg: "#EDFBF2", emoji: "👨‍⚕️" },
+const HELP_ITEMS = [
+  {
+    group: "👨‍👩‍👧 Family & Guardian",
+    items: [
+      { icon: <Phone size={28} color="#1A56DB" />,   bg:"#EBF2FF", border:"#1A56DB", label:"Call Daughter / Son",    detail:"Your family is always here for you",       href:"tel:+911234567890", external:true },
+      { icon: <Video size={28} color="#555577" />,   bg:"#EEF2FF", border:"#555577", label:"Guardian Dashboard",    detail:"Family monitors your safety from here",    href:"/guardian"         },
+      { icon: <Video size={28} color="#7C3AED" />,   bg:"#F5F0FF", border:"#7C3AED", label:"Live Help Session",     detail:"Family draws on your screen to guide you",  href:"/guardian/live-help"},
+      { icon: <Mail size={28} color="#8B4000" />,    bg:"#FFF8F0", border:"#8B4000", label:"Weekly Digest Email",   detail:"Preview the email your family receives",    href:"/digest"           },
+    ],
+  },
+  {
+    group: "📋 Learning & Practice",
+    items: [
+      { icon: <ClipboardList size={28} color="#1A7340" />, bg:"#EDFBF2", border:"#1A7340", label:"Step-by-Step Guide",  detail:"Practice paying bills, bank balance & more", href:"/playbook" },
+      { icon: <BookOpen size={28} color="#1A56DB" />,      bg:"#EBF2FF", border:"#1A56DB", label:"My Tasks",            detail:"View and complete your daily tasks",          href:"/tasks"    },
+    ],
+  },
+  {
+    group: "🛡️ Safety",
+    items: [
+      { icon: <Shield size={28} color="#CC0000" />,  bg:"#FFF0F0", border:"#CC0000", label:"Scam Protection Demo",  detail:"See how ElderBridge blocks dangerous websites", href:"/"       },
+      { icon: <Globe size={28} color="#7C3AED" />,   bg:"#F5F0FF", border:"#7C3AED", label:"Browser Extension",    detail:"Makes any website safe on your browser",       href:"/extension" },
+    ],
+  },
 ];
 
 export default function HelpPage() {
@@ -16,102 +37,63 @@ export default function HelpPage() {
       <main className="min-h-screen bg-[#FFFDF5] pb-24">
         <div className="max-w-2xl mx-auto px-6 pt-8">
 
-          <header className="mb-8 animate-fade-in">
-            <h1 className="text-[42px] font-bold text-[#1A1A1A] leading-tight mb-2">👥 Get Help</h1>
-            <p className="text-[26px] font-semibold text-[#444444]">Call your family or get support</p>
-          </header>
+          {/* Header */}
+          <motion.header className="mb-8" initial={{ opacity:0, y:-16 }} animate={{ opacity:1, y:0 }}>
+            <h1 className="text-[42px] font-bold text-[#1A1A1A] leading-tight mb-2">
+              ❓ Get Help
+            </h1>
+            <p className="text-[24px] font-semibold text-[#444444]">
+              Everything you need is right here
+            </p>
+          </motion.header>
 
           {/* Emergency SOS */}
-          <section className="mb-8">
-            <button
-              onClick={() => alert("🚨 SOS sent to your family! They will call you shortly.")}
-              className="w-full min-h-[96px] rounded-2xl bg-[#CC0000] text-[#FFFDF5] text-[30px] font-bold flex items-center justify-center gap-4 shadow-lg hover:bg-[#AA0000] transition-colors focus:outline-none focus:ring-4 focus:ring-[#FF6B00] focus:ring-offset-2"
-              aria-label="Emergency SOS"
-            >
-              <AlertTriangle size={40} /> 🆘 Emergency SOS
-            </button>
-            <p className="text-center text-[22px] font-semibold text-[#444444] mt-3">
-              Sends an alert to all your family members instantly
-            </p>
-          </section>
-
-          {/* Step-by-step guide */}
-          <section className="mb-8">
-            <a href="/playbook"
-              className="flex items-center gap-5 p-7 rounded-2xl shadow-md border border-[#D0C8B8] min-h-[88px] w-full bg-[#EBF2FF] hover:bg-[#DBEAFE] transition-all no-underline focus:outline-none focus:ring-4 focus:ring-[#FF6B00]"
-              style={{ borderLeft: "6px solid #1A56DB", paddingLeft: "24px" }}
-            >
-              <span className="text-[48px]">📋</span>
-              <div className="flex-1">
-                <p className="text-[26px] font-bold text-[#1A1A1A]">Step-by-Step Guide</p>
-                <p className="text-[20px] font-semibold text-[#444444]">I&apos;ll walk you through any task</p>
+          <motion.section className="mb-8" initial={{ opacity:0, scale:0.96 }} animate={{ opacity:1, scale:1 }} transition={{ delay:0.1 }}>
+            <a href="tel:112"
+              className="flex items-center justify-center gap-4 w-full py-7 rounded-2xl shadow-lg focus:outline-none focus:ring-4 focus:ring-[#FF6B00] transition-all"
+              style={{ backgroundColor:"#CC0000", color:"white" }}
+              aria-label="Emergency SOS — call 112">
+              <AlertTriangle size={40} />
+              <div className="text-center">
+                <p className="text-[32px] font-bold">🆘 Emergency SOS</p>
+                <p className="text-[20px] font-semibold opacity-90">Tap to call 112</p>
               </div>
-              <span className="text-[32px] text-[#1A56DB]">›</span>
             </a>
-          </section>
+          </motion.section>
 
-          {/* Family contacts */}
-          <section className="mb-8" aria-labelledby="contacts-heading">
-            <h2 id="contacts-heading" className="text-[32px] font-bold text-[#1A1A1A] mb-4 flex items-center gap-3">
-              <Users size={32} color="#1A56DB" aria-hidden="true" />
-              Your Family
-            </h2>
-            <div className="flex flex-col gap-5">
-              {contacts.map((c) => (
-                <div key={c.name}
-                  className="flex items-center gap-5 p-6 rounded-2xl shadow-md border border-[#D0C8B8] min-h-[88px]"
-                  style={{ backgroundColor: c.bg, borderLeft: `4px solid ${c.color}`, paddingLeft: "20px" }}>
-                  <span className="text-[48px] flex-shrink-0">{c.emoji}</span>
-                  <div className="flex-1">
-                    <p className="text-[26px] font-bold text-[#1A1A1A]">{c.name}</p>
-                    <p className="text-[22px] font-semibold text-[#444444]">{c.phone}</p>
-                  </div>
-                  <div className="flex gap-3">
-                    <a href={`tel:${c.phone.replace(/\s/g, "")}`}
-                      className="h-[60px] w-[60px] rounded-xl flex items-center justify-center no-underline"
-                      style={{ backgroundColor: c.color }}
-                      aria-label={`Call ${c.name}`}>
-                      <Phone size={28} color="#FFFDF5" />
-                    </a>
-                    <a href={`sms:${c.phone.replace(/\s/g, "")}`}
-                      className="h-[60px] w-[60px] rounded-xl flex items-center justify-center bg-[#EDEDDD] no-underline"
-                      aria-label={`Message ${c.name}`}>
-                      <MessageCircle size={28} color="#444444" />
-                    </a>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          {/* Guardian Dashboard */}
-          <section className="mb-8">
-            <a href="/guardian"
-              className="flex items-center gap-5 p-7 rounded-2xl shadow-md border border-[#D0C8B8] min-h-[88px] w-full bg-[#EDFBF2] hover:bg-[#D1FAE5] transition-all no-underline focus:outline-none focus:ring-4 focus:ring-[#FF6B00]"
-              style={{ borderLeft: "6px solid #1A7340", paddingLeft: "24px" }}
-            >
-              <span className="text-[48px]">🛡️</span>
-              <div className="flex-1">
-                <p className="text-[26px] font-bold text-[#1A1A1A]">Guardian Dashboard</p>
-                <p className="text-[20px] font-semibold text-[#444444]">Family safety monitoring view</p>
+          {/* Help Groups */}
+          {HELP_ITEMS.map((group, gi) => (
+            <motion.section key={gi} className="mb-8"
+              initial={{ opacity:0, y:16 }} animate={{ opacity:1, y:0 }}
+              transition={{ delay: 0.15 + gi * 0.08 }}>
+              <h2 className="text-[26px] font-bold text-[#1A1A1A] mb-4">{group.group}</h2>
+              <div className="flex flex-col gap-4">
+                {group.items.map((item, i) => (
+                  <a key={i} href={item.href}
+                    target={item.external ? "_blank" : undefined}
+                    rel={item.external ? "noopener noreferrer" : undefined}
+                    className="flex items-center gap-5 p-6 rounded-2xl shadow-md border border-[#D0C8B8] w-full text-left hover:shadow-lg transition-all focus:outline-none focus:ring-4 focus:ring-[#FF6B00]"
+                    style={{ backgroundColor: item.bg, borderLeft: `5px solid ${item.border}` }}>
+                    <div className="flex-shrink-0">{item.icon}</div>
+                    <div className="flex-1">
+                      <p className="text-[22px] font-bold text-[#1A1A1A]">{item.label}</p>
+                      <p className="text-[17px] font-semibold text-[#444444]">{item.detail}</p>
+                    </div>
+                    <span className="text-[26px]" style={{ color: item.border }}>›</span>
+                  </a>
+                ))}
               </div>
-              <span className="text-[32px] text-[#1A7340]">›</span>
-            </a>
-          </section>
+            </motion.section>
+          ))}
 
-          {/* Scam protection */}
-          <section className="p-6 rounded-2xl bg-[#FFF8F0] border-2 border-[#8B4000]">
-            <div className="flex items-center gap-4 mb-3">
-              <Shield size={36} color="#8B4000" />
-              <h2 className="text-[28px] font-bold text-[#8B4000]">Protect Yourself</h2>
-            </div>
-            <p className="text-[24px] font-semibold text-[#444444] leading-relaxed">
-              Remember: <strong className="text-[#CC0000]">Never share your PIN, OTP, or bank password</strong> with anyone — even people calling from a bank number.
+          {/* Footer reassurance */}
+          <motion.div className="text-center p-6 rounded-2xl bg-[#EDFBF2] border border-[#1A7340]"
+            initial={{ opacity:0 }} animate={{ opacity:1 }} transition={{ delay:0.5 }}>
+            <p className="text-[22px] font-bold text-[#1A7340] mb-2">You&apos;re never alone 💚</p>
+            <p className="text-[18px] font-semibold text-[#444]">
+              ElderBridge is always watching over you. Your family gets alerted the moment anything goes wrong.
             </p>
-            <p className="text-[22px] font-semibold text-[#444444] mt-3">
-              If unsure, tap the SOS button above and your family will help you.
-            </p>
-          </section>
+          </motion.div>
 
         </div>
       </main>

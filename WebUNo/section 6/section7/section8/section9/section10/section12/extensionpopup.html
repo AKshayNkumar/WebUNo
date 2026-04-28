@@ -1,0 +1,193 @@
+<!-- popup.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ElderBridge</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      width: 400px;
+      padding: 24px;
+      font-family: 'Atkinson Hyperlegible', system-ui, sans-serif;
+      background: linear-gradient(135deg, #FFFDF5 0%, #FEF3C7 100%);
+    }
+    
+    .header {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+    
+    .logo {
+      font-size: 48px;
+      margin-bottom: 8px;
+    }
+    
+    h1 {
+      font-size: 24px;
+      color: #1A1A1A;
+      margin-bottom: 4px;
+    }
+    
+    .tagline {
+      font-size: 14px;
+      color: #666666;
+    }
+    
+    .toggle-section {
+      background: white;
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 16px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .toggle-container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    
+    .toggle-label {
+      font-size: 18px;
+      font-weight: 600;
+      color: #1A1A1A;
+    }
+    
+    .toggle-switch {
+      position: relative;
+      width: 60px;
+      height: 32px;
+      background: #E5E7EB;
+      border-radius: 16px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    
+    .toggle-switch.active {
+      background: #1A7340;
+    }
+    
+    .toggle-switch::after {
+      content: '';
+      position: absolute;
+      top: 4px;
+      left: 4px;
+      width: 24px;
+      height: 24px;
+      background: white;
+      border-radius: 50%;
+      transition: transform 0.3s;
+    }
+    
+    .toggle-switch.active::after {
+      transform: translateX(28px);
+    }
+    
+    .status {
+      margin-top: 12px;
+      padding: 12px;
+      background: #F3F4F6;
+      border-radius: 8px;
+      font-size: 14px;
+      color: #666666;
+      text-align: center;
+    }
+    
+    .quick-actions {
+      background: white;
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .quick-actions h2 {
+      font-size: 16px;
+      color: #1A1A1A;
+      margin-bottom: 12px;
+    }
+    
+    .action-btn {
+      width: 100%;
+      padding: 14px 20px;
+      margin-bottom: 8px;
+      background: #F3F4F6;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      color: #1A1A1A;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-align: left;
+    }
+    
+    .action-btn:hover {
+      background: #E5E7EB;
+      transform: translateY(-1px);
+    }
+    
+    .action-btn:last-child {
+      margin-bottom: 0;
+    }
+    
+    .footer {
+      margin-top: 16px;
+      text-align: center;
+      font-size: 12px;
+      color: #999999;
+    }
+    
+    .footer a {
+      color: #1A56DB;
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="logo">🌉</div>
+    <h1>ElderBridge</h1>
+    <p class="tagline">Making the internet simple & safe</p>
+  </div>
+  
+  <div class="toggle-section">
+    <div class="toggle-container">
+      <span class="toggle-label">Senior Mode</span>
+      <div class="toggle-switch" id="seniorModeToggle"></div>
+    </div>
+    <div class="status" id="statusMessage">
+      Click the toggle to activate Senior Mode
+    </div>
+  </div>
+  
+  <div class="quick-actions">
+    <h2>Quick Actions</h2>
+    <button class="action-btn" id="checkSafety">
+      🛡️ Check if this page is safe
+    </button>
+    <button class="action-btn" id="readPage">
+      🔊 Read this page aloud
+    </button>
+    <button class="action-btn" id="getHelp">
+      👨‍👩‍👧 Get help from family
+    </button>
+    <button class="action-btn" id="openDashboard">
+      📊 Open full dashboard
+    </button>
+  </div>
+  
+  <div class="footer">
+    Built with ❤️ for seniors •
+    <a href="https://elderbridge.app" target="_blank">Learn More</a>
+  </div>
+  
+  <script src="popup.js"></script>
+</body>
+</html>

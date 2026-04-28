@@ -1,0 +1,286 @@
+// /lib/email/digestGenerator.ts
+
+import { render } from '@react-email/render';
+import WeeklyDigest from '@/emails/WeeklyDigest';
+import { Resend } from 'resend';
+
+const resend = new Resend(process.env.RESEND_API_KEY);
+
+export async function generateWeeklyDigest(userId: string) {
+  // Fetch user data
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    include: {
+      activityLogs: {
+        where: {
+          timestamp: {
+            gte: getWeekStart(),
+            lte: getWeekEnd()
+          }
+        },
+        orderBy: { timestamp: 'desc' }
+      },
+      memoryCards: {
+        where: {
+          createdAt: {
+            gte: getWeekStart()
+          }
+        }
+      },
+      confidenceScores: {
+        orderBy: { calculatedAt: 'desc' },
+        take: 2
+      },
+      guardians: {
+        where: { isPrimary: true }
+      }
+    }
+  });
+
+  if (!user || !user.guardians.length) {
+    console.log('No user or guardians found');
+    return;
+  }
+
+  // Calculate highlights
+  const highlights = await calculateHighlights(user);
+  
+  // Prepare activities
+  const activities = user.activityLogs.slice(0, 10).map(log => ({
+    date: formatDate(log.timestamp),
+    action: log.actionDescription,
+    success: log.succeeded,
+    timeSpent: log.durationSeconds
+  }));
+
+  // Get scam blocks count
+  const scamsBlocked = await prisma.scamAttempt.count({
+    where: {
+      userId: user.id,
+      blocked: true,
+      timestamp: {
+        gte: getWeekStart()
+      }
+    }
+  });
+
+  // Get help requests
+  const helpRequests = await prisma.guardianSession.count({
+    where: {
+      seniorId: user.id,
+      startedAt: {
+        gte: getWeekStart()
+      }
+    }
+  });
+
+  // Determine action items
+  const actionItems = generateActionItems(user, scamsBlocked, helpRequests);
+  
+  // Render email
+  const emailHtml = render(
+    WeeklyDigest({
+      seniorName: user.fullName,
+      guardianName: user.guardians[0].fullName,
+      weekStart: formatDate(getWeekStart()),
+      weekEnd: formatDate(getWeekEnd()),
+      highlights,
+      activities,
+      scamsBlocked,
+      helpRequests,
+      nextGoals: highlights.nextGoals,
+      actionItems
+    })
+  );
+
+  // Send email
+  try {
+    const result = await resend.emails.send({
+      from: 'ElderBridge <digest@elderbridge.app>',
+      to: user.guardians.map(g => g.email),
+      subject: `${user.fullName}'s digital week: ${highlights.biggestAchievement} 🌟`,
+      html: emailHtml
+    });
+
+    // Log digest sent
+    await prisma.weeklyDigest.create({
+      data: {
+        userId: user.id,
+        weekStart: getWeekStart(),
+        weekEnd: getWeekEnd(),
+        emailSent: true,
+        sentAt: new Date(),
+        resendId: result.id
+      }
+    });
+
+    console.log(`✅ Digest sent for ${user.fullName}`);
+    return result;
+    
+  } catch (error) {
+    console.error('Failed to send digest:', error);
+    throw error;
+  }
+}
+
+async function calculateHighlights(user: any) {
+  const currentScore = user.confidenceScores[0]?.score || 0;
+  const previousScore = user.confidenceScores[1]?.score || 0;
+  const confidenceChange = currentScore - previousScore;
+
+  // Find biggest achievement using GPT-4
+  const achievementPrompt = `
+    Analyze these activities from a ${user.fullName}, a senior learning to use technology:
+    
+    ${user.activityLogs.slice(0, 5).map((log: any) => 
+      `- ${log.actionDescription} (${log.succeeded ? 'succeeded' : 'attempted'})`
+    ).join('\n')}
+    
+    Write ONE celebratory sentence (max 15 words) highlighting their biggest 
+    achievement this week. Make it warm and proud, like a grandchild telling 
+    the family. Include an emoji.
+  `;
+
+  const achievementResponse = await openai.chat.completions.create({
+    model: 'gpt-4',
+    messages: [{ role: 'user', content: achievementPrompt }],
+    max_tokens: 50,
+    temperature: 0.7
+  });
+
+  const biggestAchievement = achievementResponse.choices[0].message.content || 
+    `${user.fullName} stayed active online this week! 🌟`;
+
+  // Identify new skills
+  const newSkills = user.activityLogs
+    .filter((log: any) => log.succeeded && !log.wasGuided)
+    .map((log: any) => log.actionType)
+    .filter((value: string, index: number, self: string[]) => 
+      self.indexOf(value) === index
+    )
+    .slice(0, 3)
+    .map((skill: string) => formatSkillName(skill));
+
+  // Generate funny moment with GPT-4
+  let funnyMoment = undefined;
+  if (user.activityLogs.length > 0) {
+    const funnyPrompt = `
+      Based on these activities, write ONE sweet or mildly humorous observation 
+      (max 20 words) that shows ${user.fullName}'s personality or learning journey. 
+      Keep it respectful and endearing.
+      
+      Activities: ${user.activityLogs.slice(0, 3).map((log: any) => 
+        log.actionDescription
+      ).join(', ')}
+    `;
+
+    const funnyResponse = await openai.chat.completions.create({
+      model: 'gpt-4',
+      messages: [{ role: 'user', content: funnyPrompt }],
+      max_tokens: 60,
+      temperature: 0.8
+    });
+
+    funnyMoment = funnyResponse.choices[0].message.content;
+  }
+
+  // Determine next goals
+  const nextGoals = determineNextGoals(user);
+
+  return {
+    biggestAchievement,
+    newSkillsLearned: newSkills,
+    funnyMoment,
+    confidenceScore: currentScore,
+    confidenceChange,
+    nextGoals
+  };
+}
+
+function generateActionItems(user: any, scamsBlocked: number, helpRequests: number): string[] {
+  const items: string[] = [];
+
+  if (scamsBlocked > 0) {
+    items.push(
+      `Talk to ${user.fullName} about the ${scamsBlocked} scam attempt${scamsBlocked > 1 ? 's' : ''} we blocked this week`
+    );
+  }
+
+  if (helpRequests > 3) {
+    items.push(
+      `${user.fullName} asked for help ${helpRequests} times - consider scheduling a practice session together`
+    );
+  }
+
+  const recentFails = user.activityLogs.filter((log: any) => !log.succeeded).length;
+  if (recentFails > 5) {
+    items.push(
+      `Create a new playbook for tasks they're finding difficult`
+    );
+  }
+
+  if (user.confidenceScores[0]?.score > 70) {
+    items.push(
+      `Celebrate their growing confidence! Maybe try teaching them something new?`
+    );
+  }
+
+  if (items.length === 0) {
+    items.push(
+      `Just check in and ask how they're feeling about using the internet`
+    );
+  }
+
+  return items;
+}
+
+function determineNextGoals(user: any): string[] {
+  const goals: string[] = [];
+  
+  // Based on current confidence and activity
+  const score = user.confidenceScores[0]?.score || 0;
+  
+  if (score < 30) {
+    goals.push('Complete 3 practice tasks in Sandbox Mode');
+    goals.push('Learn one new skill with guardian help');
+  } else if (score < 60) {
+    goals.push('Complete a task independently without help');
+    goals.push('Recognize and report one scam attempt');
+  } else {
+    goals.push('Teach someone else what they learned');
+    goals.push('Explore a new website safely');
+  }
+  
+  return goals;
+}
+
+function formatSkillName(skill: string): string {
+  const skillMap: Record<string, string> = {
+    'pay_bill': 'Paying bills online',
+    'check_balance': 'Checking bank balance',
+    'make_call': 'Making video calls',
+    'read_email': 'Reading emails',
+    'medicine_schedule': 'Managing medicine schedule'
+  };
+  
+  return skillMap[skill] || skill.replace(/_/g, ' ');
+}
+
+function getWeekStart(): Date {
+  const now = new Date();
+  const dayOfWeek = now.getDay();
+  const diff = now.getDate() - dayOfWeek;
+  return new Date(now.setDate(diff));
+}
+
+function getWeekEnd(): Date {
+  const start = getWeekStart();
+  return new Date(start.getTime() + 7 * 24 * 60 * 60 * 1000);
+}
+
+function formatDate(date: Date): string {
+  return date.toLocaleDateString('en-US', { 
+    month: 'short', 
+    day: 'numeric' 
+  });
+}
