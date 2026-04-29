@@ -135,6 +135,10 @@ const config: Config = {
       xl:     "0 12px 40px -8px rgba(42,36,26,0.22), 0 6px 16px -6px rgba(42,36,26,0.14)",
       focus:  "0 0 0 4px #FF6B00",
       inner:  "inset 0 2px 4px 0 rgba(42,36,26,0.10)",
+      // homepage.html design tokens
+      soft:   "0 4px 24px -4px rgba(180,140,80,0.22), 0 1px 6px rgba(180,140,80,0.10)",
+      glow:   "0 0 24px 2px rgba(255,160,50,0.35), 0 4px 16px rgba(255,140,30,0.22)",
+      coral:  "0 4px 20px -2px rgba(255,107,0,0.40), 0 2px 8px rgba(255,107,0,0.20)",
     },
     transitionDuration: {
       75: "75ms", 100: "100ms", 150: "150ms",
@@ -157,6 +161,7 @@ const config: Config = {
       "wave-3":     "wave 1.2s ease-in-out 300ms infinite",
       ping:         "ping 1s cubic-bezier(0, 0, 0.2, 1) infinite",
       spin:         "spin 1s linear infinite",
+      float:        "float 6s ease-in-out infinite",
     },
     minHeight: {
       0:  "0px",
@@ -177,6 +182,16 @@ const config: Config = {
       ringWidth: { 0: "0px", 2: "2px", DEFAULT: "4px", 4: "4px", 8: "8px" },
       ringColor: { DEFAULT: "#FF6B00" },
       ringOffsetWidth: { DEFAULT: "2px", 0: "0px", 2: "2px", 4: "4px" },
+      // homepage.html semantic color aliases
+      colors: {
+        card:       { DEFAULT: "#FFFDF5", foreground: "#1A1A1A" },
+        foreground: "#1A1A1A",
+        muted:      { DEFAULT: "#F5F0E8", foreground: "#767676" },
+        secondary:  { DEFAULT: "#FDE68A", foreground: "#78350F" },
+        "primary-foreground": "#FFFDF5",
+        "secondary-foreground": "#78350F",
+        "muted-foreground": "#767676",
+      },
       keyframes: {
         fadeIn:     { from: { opacity: "0" }, to: { opacity: "1" } },
         pulse:      { "0%, 100%": { opacity: "1" }, "50%": { opacity: "0.7" } },
@@ -197,6 +212,14 @@ const config: Config = {
         spin: {
           from: { transform: "rotate(0deg)" },
           to:   { transform: "rotate(360deg)" },
+        },
+        float: {
+          "0%, 100%": { transform: "translateY(0px)" },
+          "50%":      { transform: "translateY(-15px)" },
+        },
+        fadeUp: {
+          from: { opacity: "0", transform: "translateY(20px)" },
+          to:   { opacity: "1", transform: "translateY(0)" },
         },
       },
     },

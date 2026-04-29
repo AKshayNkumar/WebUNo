@@ -3,9 +3,10 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { BottomNavigation } from "@/components/layout/BottomNavigation";
+import { useLanguage } from "@/hooks/useLanguage";
 
 const MOCK_DIGEST = {
-  seniorName: "Kamala",
+  seniorName: "Ajji",
   guardianName: "Priya",
   weekStart: "Apr 21",
   weekEnd: "Apr 27",
@@ -35,12 +36,13 @@ const MOCK_DIGEST = {
     "Recognise and report one scam attempt",
   ],
   actionItems: [
-    "Talk to Kamala about the 3 scam attempts we blocked this week",
+    "Talk to Ajji about the 3 scam attempts we blocked this week",
     "Celebrate her growing confidence! Maybe try teaching her something new?",
   ],
 };
 
 export default function DigestPage() {
+  const { t } = useLanguage();
   const [sending, setSending] = useState(false);
   const [sent,    setSent]    = useState(false);
   const d = MOCK_DIGEST;
@@ -60,9 +62,9 @@ export default function DigestPage() {
 
           {/* Page header */}
           <motion.div className="mb-6" initial={{ opacity:0, y:-16 }} animate={{ opacity:1, y:0 }}>
-            <h1 className="text-[36px] font-bold text-[#1A1A1A] mb-2">📧 Weekly Digest Preview</h1>
+            <h1 className="text-[36px] font-bold text-[#1A1A1A] mb-2">📧 {t("digest_title")}</h1>
             <p className="text-[18px] font-semibold text-[#444]">
-              This is the email sent every Sunday to {d.guardianName}
+              {t("digest_for")} {d.guardianName}
             </p>
             <button
               onClick={handleSendDigest}

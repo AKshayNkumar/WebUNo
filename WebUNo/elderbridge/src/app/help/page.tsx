@@ -3,6 +3,7 @@
 import React from "react";
 import { motion } from "framer-motion";
 import { BottomNavigation } from "@/components/layout/BottomNavigation";
+import { useLanguage } from "@/hooks/useLanguage";
 import { Phone, Shield, ClipboardList, Globe, Mail, Video, BookOpen, AlertTriangle } from "lucide-react";
 
 const HELP_ITEMS = [
@@ -32,6 +33,7 @@ const HELP_ITEMS = [
 ];
 
 export default function HelpPage() {
+  const { t } = useLanguage();
   return (
     <>
       <main className="min-h-screen bg-[#FFFDF5] pb-24">
@@ -40,7 +42,7 @@ export default function HelpPage() {
           {/* Header */}
           <motion.header className="mb-8" initial={{ opacity:0, y:-16 }} animate={{ opacity:1, y:0 }}>
             <h1 className="text-[42px] font-bold text-[#1A1A1A] leading-tight mb-2">
-              ❓ Get Help
+              ❓ {t("help_title")}
             </h1>
             <p className="text-[24px] font-semibold text-[#444444]">
               Everything you need is right here

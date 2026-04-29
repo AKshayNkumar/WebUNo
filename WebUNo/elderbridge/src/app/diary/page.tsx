@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { BookOpen, Plus } from "lucide-react";
 import { BottomNavigation } from "@/components/layout/BottomNavigation";
+import { useLanguage } from "@/hooks/useLanguage";
 
 const initialEntries = [
   { id: "e1", date: "Monday, 28 April 2026", text: "Walked in the park for 20 minutes. Felt good today. Had breakfast with my daughter.", mood: "😊" },
@@ -11,13 +12,14 @@ const initialEntries = [
 
 export default function DiaryPage() {
   const [entries, setEntries]   = useState(initialEntries);
+  const { t, lang } = useLanguage();
   const [writing, setWriting]   = useState(false);
   const [newText, setNewText]   = useState("");
   const [newMood, setNewMood]   = useState("😊");
 
   const moods = ["😊", "😐", "😢", "🙏", "😴", "💪"];
 
-  const today = new Date().toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+  const today = new Date().toLocaleDateString(lang === "kn" ? "kn-IN" : "en-IN", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
 
   const save = () => {
     if (!newText.trim()) return;
@@ -33,8 +35,8 @@ export default function DiaryPage() {
         <div className="max-w-2xl mx-auto px-6 pt-8">
 
           <header className="mb-8 animate-fade-in">
-            <h1 className="text-[42px] font-bold text-[#1A1A1A] leading-tight mb-2">📖 My Diary</h1>
-            <p className="text-[26px] font-semibold text-[#444444]">Your personal thoughts and memories</p>
+            <h1 className="text-[42px] font-bold text-[#1A1A1A] leading-tight mb-2">📖 {t("diary_title")}</h1>
+            <p className="text-[26px] font-semibold text-[#444444]">{t("more_diary_d")}</p>
           </header>
 
           {/* Write new entry */}
@@ -44,7 +46,7 @@ export default function DiaryPage() {
               className="w-full min-h-[88px] rounded-2xl bg-[#1A56DB] text-[#FFFDF5] text-[28px] font-bold flex items-center justify-center gap-4 shadow-lg hover:bg-[#1446B8] transition-colors duration-100 mb-8 focus:outline-none focus:ring-4 focus:ring-[#FF6B00] focus:ring-offset-2"
               aria-label="Write a new diary entry"
             >
-              <Plus size={36} /> Write Today&apos;s Entry
+              <Plus size={36} /> {t("diary_write")}
             </button>
           ) : (
             <div className="bg-[#F5F0E8] rounded-2xl p-6 shadow-md border border-[#D0C8B8] mb-8">
@@ -62,7 +64,7 @@ export default function DiaryPage() {
               <textarea
                 value={newText}
                 onChange={(e) => setNewText(e.target.value)}
-                placeholder="Write about your day..."
+                placeholder={t("diary_placeholder")}
                 rows={5}
                 className="mb-4 resize-none"
                 aria-label="Diary entry text"
@@ -70,17 +72,18 @@ export default function DiaryPage() {
               <div className="flex gap-4">
                 <button onClick={save}
                   className="flex-1 min-h-[72px] bg-[#1A7340] text-[#FFFDF5] text-[24px] font-bold rounded-xl hover:bg-[#155C33] focus:outline-none focus:ring-4 focus:ring-[#FF6B00]">
-                  Save Entry
+                  {t("diary_save")}
                 </button>
                 <button onClick={() => setWriting(false)}
                   className="flex-1 min-h-[72px] bg-[#EDEDDD] text-[#1A1A1A] text-[24px] font-bold rounded-xl hover:bg-[#D0C8B8] focus:outline-none focus:ring-4 focus:ring-[#FF6B00]">
-                  Cancel
+                  {t("diary_cancel")}
                 </button>
               </div>
             </div>
           )}
 
           {/* Past entries */}
+          <h2 className="text-[28px] font-bold text-[#1A1A1A] mb-4">{t("diary_past")}</h2>
           <div className="flex flex-col gap-6">
             {entries.map((entry) => (
               <div key={entry.id}

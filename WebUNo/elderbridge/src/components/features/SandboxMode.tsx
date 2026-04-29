@@ -116,6 +116,142 @@ export function SandboxMode({ targetUrl, playbookSteps, onComplete, onExit }: Sa
     );
   }
 
+  const step = playbookSteps[currentStep];
+
+  const handleStepAction = () => {
+    const next = currentStep + 1;
+    setMetrics(prev => ({ ...prev, attempts: prev.attempts + 1, stepsCompleted: next }));
+    if (next >= playbookSteps.length) {
+      const totalTime = Date.now() - startTimeRef.current;
+      const score = Math.min(100, Math.round(
+        (next / playbookSteps.length) * 50 +
+        Math.max(0, 30 - (totalTime / 60000) * 2) +
+        Math.max(0, 20 - metrics.mistakesCount * 5)
+      ));
+      onComplete({ ...metrics, totalTime, stepsCompleted: next, confidenceScore: score });
+    } else {
+      setCurrentStep(next);
+    }
+  };
+
+  // Simulated screens for each step
+  const SimulatedScreens: Record<number, React.ReactNode> = {
+    0: (
+      <div className="flex flex-col items-center justify-center h-full gap-6 p-8">
+        <div className="text-[72px]">🌐</div>
+        <p className="text-[28px] font-bold text-[#1A1A1A] text-center">Open Google Chrome</p>
+        <p className="text-[20px] text-[#444] text-center">Look for the colourful circle icon on your phone or computer</p>
+        <div className="w-24 h-24 rounded-2xl bg-white shadow-lg border-2 border-[#D0C8B8] flex items-center justify-center">
+          <span className="text-[48px]">🔵🟢🟡🔴</span>
+        </div>
+        <button onClick={handleStepAction}
+          className="px-10 py-5 bg-[#1A56DB] hover:bg-[#1446B8] text-white rounded-2xl text-[24px] font-bold shadow-lg transition-all focus:outline-none focus:ring-4 focus:ring-[#FF6B00]"
+          style={{ minHeight: "auto" }}>
+          ✅ I Opened Chrome
+        </button>
+      </div>
+    ),
+    1: (
+      <div className="flex flex-col items-center justify-center h-full gap-6 p-8">
+        <p className="text-[24px] font-bold text-[#1A1A1A] text-center">Type the website address</p>
+        <div className="w-full max-w-md bg-white rounded-xl border-2 border-[#1A56DB] shadow-md p-4">
+          <div className="flex items-center gap-3">
+            <span className="text-[18px]">🔒</span>
+            <input type="text" defaultValue="www.billdesk.com" readOnly
+              className="flex-1 text-[20px] font-semibold text-[#1A56DB] bg-transparent border-none outline-none"
+              style={{ minHeight: "auto" }} />
+          </div>
+        </div>
+        <p className="text-[18px] text-[#444] text-center">Type <strong>www.billdesk.com</strong> in the address bar at the top</p>
+        <button onClick={handleStepAction}
+          className="px-10 py-5 bg-[#1A56DB] hover:bg-[#1446B8] text-white rounded-2xl text-[24px] font-bold shadow-lg transition-all focus:outline-none focus:ring-4 focus:ring-[#FF6B00]"
+          style={{ minHeight: "auto" }}>
+          ✅ I Typed the Address
+        </button>
+      </div>
+    ),
+    2: (
+      <div className="flex flex-col items-center h-full gap-5 p-8">
+        <p className="text-[24px] font-bold text-[#1A1A1A] text-center mb-2">Tap on &quot;Electricity&quot;</p>
+        <div className="w-full max-w-md">
+          <div className="bg-[#1A56DB] text-white text-center py-4 rounded-t-xl">
+            <p className="text-[20px] font-bold">BillDesk</p>
+            <p className="text-[14px] opacity-80">Pay Your Bills Online</p>
+          </div>
+          <div className="bg-white border-2 border-t-0 border-[#D0C8B8] rounded-b-xl p-5 grid grid-cols-3 gap-4">
+            {[
+              { icon: "💡", label: "Electricity", active: true },
+              { icon: "📱", label: "Mobile", active: false },
+              { icon: "💧", label: "Water", active: false },
+              { icon: "📺", label: "DTH", active: false },
+              { icon: "🏠", label: "Gas", active: false },
+              { icon: "🌐", label: "Internet", active: false },
+            ].map(b => (
+              <button key={b.label}
+                onClick={b.active ? handleStepAction : () => setMetrics(p => ({...p, mistakesCount: p.mistakesCount + 1}))}
+                className={`p-4 rounded-xl text-center transition-all border-2 ${
+                  b.active
+                    ? "bg-[#FFF8F0] border-[#8B4000] shadow-md hover:shadow-lg animate-pulse"
+                    : "bg-[#F5F5F5] border-transparent hover:bg-[#EFEFEF]"
+                }`}
+                style={{ minHeight: "auto", minWidth: "auto" }}>
+                <div className="text-[28px] mb-1">{b.icon}</div>
+                <p className={`text-[13px] font-bold ${b.active ? "text-[#8B4000]" : "text-[#666]"}`}>{b.label}</p>
+              </button>
+            ))}
+          </div>
+        </div>
+        <p className="text-[16px] text-[#8B4000] font-semibold">👆 Find and tap the &quot;Electricity&quot; button</p>
+      </div>
+    ),
+    3: (
+      <div className="flex flex-col items-center justify-center h-full gap-6 p-8">
+        <p className="text-[24px] font-bold text-[#1A1A1A] text-center">Enter Your Consumer Number</p>
+        <p className="text-[18px] text-[#444] text-center">This number is written on your electricity bill</p>
+        <div className="w-full max-w-md bg-white rounded-xl border-2 border-[#D0C8B8] p-6">
+          <label className="text-[16px] font-semibold text-[#444] block mb-2">Consumer Number</label>
+          <input type="text" placeholder="e.g. 1234 5678 9012" defaultValue=""
+            className="w-full text-[22px] font-bold text-[#1A1A1A] border-2 border-[#D0C8B8] rounded-xl px-4 py-3 focus:border-[#1A56DB]"
+            style={{ minHeight: "auto" }}
+            onChange={() => {}} />
+          <p className="text-[14px] text-[#767676] mt-2">📄 Look at the top of your electricity bill for this number</p>
+        </div>
+        <button onClick={handleStepAction}
+          className="px-10 py-5 bg-[#1A56DB] hover:bg-[#1446B8] text-white rounded-2xl text-[24px] font-bold shadow-lg transition-all focus:outline-none focus:ring-4 focus:ring-[#FF6B00]"
+          style={{ minHeight: "auto" }}>
+          ✅ I Entered My Number
+        </button>
+      </div>
+    ),
+    4: (
+      <div className="flex flex-col items-center justify-center h-full gap-6 p-8">
+        <p className="text-[24px] font-bold text-[#1A1A1A] text-center">Review & Pay</p>
+        <div className="w-full max-w-md bg-white rounded-xl border-2 border-[#1A7340] p-6">
+          <div className="flex justify-between items-center mb-4 pb-4 border-b border-[#E5E5E5]">
+            <span className="text-[18px] text-[#444] font-semibold">Consumer No.</span>
+            <span className="text-[18px] font-bold text-[#1A1A1A]">1234 5678 9012</span>
+          </div>
+          <div className="flex justify-between items-center mb-4 pb-4 border-b border-[#E5E5E5]">
+            <span className="text-[18px] text-[#444] font-semibold">Bill Amount</span>
+            <span className="text-[24px] font-bold text-[#CC0000]">₹ 1,240.00</span>
+          </div>
+          <div className="flex justify-between items-center mb-4">
+            <span className="text-[18px] text-[#444] font-semibold">Pay From</span>
+            <span className="text-[18px] font-bold text-[#1A56DB]">SBI ****4521</span>
+          </div>
+          <button onClick={handleStepAction}
+            className="w-full py-5 bg-[#1A7340] hover:bg-[#155c33] text-white rounded-2xl text-[26px] font-bold shadow-lg transition-all focus:outline-none focus:ring-4 focus:ring-[#FF6B00] mt-4"
+            style={{ minHeight: "auto" }}>
+            ✅ Proceed to Pay — ₹1,240
+          </button>
+        </div>
+        <p className="text-[16px] text-[#1A7340] font-semibold">🛡️ Remember: This is practice — no real money will move!</p>
+      </div>
+    ),
+  };
+
+  const screenIndex = Math.min(currentStep, Object.keys(SimulatedScreens).length - 1);
+
   return (
     <div className="fixed inset-0 bg-[#FFFDF5] z-50 flex flex-col">
       {/* Header */}
@@ -136,23 +272,45 @@ export function SandboxMode({ targetUrl, playbookSteps, onComplete, onExit }: Sa
         </div>
       </div>
 
-      {/* Sandboxed content */}
-      <div className="flex-1 relative">
-        <iframe
-          ref={iframeRef}
-          src={targetUrl}
-          className="w-full h-full border-none"
-          sandbox="allow-scripts allow-same-origin allow-forms"
-          title="Practice sandbox"
-        />
+      {/* Instruction banner */}
+      <div className="bg-[#EBF2FF] border-b-2 border-[#93C5FD] px-6 py-4">
+        <div className="max-w-6xl mx-auto flex items-center gap-4">
+          <div className="w-12 h-12 bg-[#1A56DB] rounded-full flex items-center justify-center flex-shrink-0 text-white font-bold text-[20px]"
+            style={{ minHeight: "auto", minWidth: "auto" }}>
+            {currentStep + 1}
+          </div>
+          <p className="text-[22px] font-semibold text-[#1A56DB]">{step?.instruction}</p>
+        </div>
       </div>
 
-      {/* Metrics footer */}
+      {/* Simulated screen */}
+      <div className="flex-1 relative overflow-auto">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={currentStep}
+            className="h-full"
+            initial={{ opacity: 0, x: 40 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -40 }}
+            transition={{ duration: 0.3, ease: "easeOut" }}
+          >
+            {SimulatedScreens[screenIndex] || SimulatedScreens[4]}
+          </motion.div>
+        </AnimatePresence>
+      </div>
+
+      {/* Progress bar */}
       <div className="bg-white border-t-4 border-[#D0C8B8] px-6 py-4">
-        <div className="max-w-6xl mx-auto flex items-center justify-between text-[20px] text-[#444444] font-semibold">
-          <span>Attempts: {metrics.attempts}</span>
-          <span>Steps Done: {metrics.stepsCompleted}/{playbookSteps.length}</span>
-          <span>Time: {Math.floor((Date.now() - startTimeRef.current) / 1000)}s</span>
+        <div className="max-w-6xl mx-auto">
+          <div className="flex items-center justify-between mb-2 text-[18px] text-[#444] font-semibold">
+            <span>Progress</span>
+            <span>{currentStep}/{playbookSteps.length} steps</span>
+          </div>
+          <div className="w-full h-3 bg-[#F5F0E8] rounded-full overflow-hidden">
+            <motion.div className="h-full bg-[#1A7340] rounded-full"
+              animate={{ width: `${(currentStep / playbookSteps.length) * 100}%` }}
+              transition={{ duration: 0.5 }} />
+          </div>
         </div>
       </div>
     </div>

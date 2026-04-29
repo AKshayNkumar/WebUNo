@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ElderBridge — Where Care Meets Connection</title>
+  <meta name="description" content="ElderBridge — a warm, accessible community where care meets connection. Voice control, scam protection, guided tasks, and family guardian support." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800&family=Quicksand:wght@500;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Kannada:wght@400;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <!-- ═══════════════════ NAV ═══════════════════ -->
+  <nav class="nav" aria-label="Primary">
+    <a href="#home" data-i18n="nav_home">Home</a>
+    <a href="http://localhost:3000/tasks" data-i18n="nav_tasks">My Tasks</a>
+    <a href="http://localhost:3000/playbook" data-i18n="nav_practice">Practice</a>
+    <a href="http://localhost:3000/guardian" data-i18n="nav_guardian">Guardian</a>
+    <a href="http://localhost:3000/help" data-i18n="nav_help">Get Help</a>
+  </nav>
+
+  <!-- ═══════════════════ HERO ═══════════════════ -->
+  <header class="hero" id="home">
+    <span class="deco cloud-l float" aria-hidden="true">☁️</span>
+    <span class="deco cloud-r float-rev" aria-hidden="true">☁️</span>
+    <span class="deco flower float" aria-hidden="true">🌻</span>
+    <span class="deco fly float-rev" aria-hidden="true">🦋</span>
+
+    <div class="character left">
+      <div class="banner coral" data-i18n="banner_grandma">Share a story with Grandma 📖</div>
+      <img src="assets/grandma.png" alt="Illustrated grandmother" width="512" height="768" />
+    </div>
+
+    <div class="character right">
+      <div class="banner sage" data-i18n="banner_grandpa">Learn something new with Grandpa 🎓</div>
+      <img src="assets/grandpa.png" alt="Illustrated grandfather" width="512" height="768" style="transform: scaleX(-1);" />
+    </div>
+
+    <div class="hero-copy">
+      <h1 data-i18n="hero_title">Welcome to <span>ElderBridge</span></h1>
+      <p data-i18n="hero_sub">Where care meets connection.</p>
+      <div class="cta-row">
+        <a href="#daily" class="btn btn-primary" data-i18n="cta_start">Start Your Journey</a>
+        <a href="http://localhost:3000/help" class="btn btn-outline" data-i18n="cta_talk">Talk to Us</a>
+      </div>
+    </div>
+
+
+
+    <div class="scroll-hint" aria-hidden="true" data-i18n="scroll_hint">↓ Scroll down</div>
+  </header>
+
+  <!-- ═══════════════════ 6 FEATURE CARDS ═══════════════════ -->
+  <section id="services" class="cards">
+    <a href="http://localhost:3000/tasks" class="card card-remind reveal">
+      <div class="icon" aria-hidden="true">🔔</div>
+      <h3 data-i18n="card_remind_t">Today's Reminders</h3>
+      <p data-i18n="card_remind_d">Medicine and bill reminders so you never miss an important moment.</p>
+    </a>
+    <a href="http://localhost:3000/tasks" class="card card-tasks reveal reveal-d1">
+      <div class="icon" aria-hidden="true">✅</div>
+      <h3 data-i18n="card_tasks_t">My Tasks</h3>
+      <p data-i18n="card_tasks_d">Quick tasks for today — paying bills, checking balance and more.</p>
+    </a>
+    <a href="http://localhost:3000/playbook" class="card card-learn reveal reveal-d2">
+      <div class="icon" aria-hidden="true">📚</div>
+      <h3 data-i18n="card_learn_t">Learn & Practice</h3>
+      <p data-i18n="card_learn_d">Step-by-step guides to safely practice paying bills, banking and more.</p>
+    </a>
+    <a href="#scam-demo" class="card card-scam reveal reveal-d3">
+      <div class="icon" aria-hidden="true">🛡️</div>
+      <h3 data-i18n="card_scam_t">Scam Protection</h3>
+      <p data-i18n="card_scam_d">AI-powered protection that blocks dangerous websites before they can harm you.</p>
+    </a>
+    <a href="http://localhost:3000/guardian" class="card card-guard reveal reveal-d4">
+      <div class="icon" aria-hidden="true">👨‍👩‍👧</div>
+      <h3 data-i18n="card_guard_t">Guardian Dashboard</h3>
+      <p data-i18n="card_guard_d">Your family stays connected — monitoring your safety and celebrating your progress.</p>
+    </a>
+    <a href="http://localhost:3000/health" class="card card-health reveal reveal-d5">
+      <div class="icon" aria-hidden="true">❤️</div>
+      <h3 data-i18n="card_health_t">Health & Medicines</h3>
+      <p data-i18n="card_health_d">Track your medicines and daily health routine with ease.</p>
+    </a>
+  </section>
+
+  <!-- ═══════════════════ DAILY ASSISTANT ═══════════════════ -->
+  <section id="daily" class="daily">
+    <div class="daily-inner">
+
+      <!-- Greeting -->
+      <div class="greeting reveal" style="margin-bottom:32px;">
+        <h2 id="greeting-text">Good Morning, Ajji 🌅</h2>
+        <p id="date-text"></p>
+      </div>
+
+      <!-- Voice Mic -->
+      <div class="mic-wrap reveal reveal-d1">
+        <button class="mic-btn" id="mic-btn" aria-label="Start voice command" type="button">
+          <span class="pulse-ring"></span>
+          <svg class="mic-icon-svg" width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></svg>
+          <div class="wave-bars">
+            <div class="wave-bar"></div>
+            <div class="wave-bar"></div>
+            <div class="wave-bar"></div>
+          </div>
+        </button>
+        <p class="mic-label" id="mic-label" data-i18n="mic_idle">Tap and tell me what you want to do today</p>
+      </div>
+
+      <!-- Reminders -->
+      <div class="reveal reveal-d2" style="margin-bottom:32px;">
+        <div class="section-title" data-i18n="sec_reminders">🔔 Today's Reminders</div>
+        <div class="row-card" style="background:#EDFBF2; border-left:5px solid #1A7340;">
+          <span class="row-icon">💊</span>
+          <div class="row-body">
+            <div class="title">Metformin 500mg</div>
+            <div class="detail" data-i18n="med_detail">1 tablet after breakfast</div>
+          </div>
+          <span class="row-badge" style="color:#1A7340; background:rgba(26,115,64,0.1);">8:30 AM</span>
+        </div>
+        <div class="row-card" style="background:#FFF0F0; border-left:5px solid #CC0000;">
+          <span class="row-icon">⚡</span>
+          <div class="row-body">
+            <div class="title" data-i18n="bill_title">Electricity Bill Due Today</div>
+            <div class="detail" data-i18n="bill_detail">₹1,240 due by midnight</div>
+          </div>
+          <span class="row-badge" style="color:#CC0000; background:rgba(204,0,0,0.1);" data-i18n="due_today">Due Today</span>
+        </div>
+      </div>
+
+      <!-- Quick Tasks -->
+      <div class="reveal reveal-d3" style="margin-bottom:32px;">
+        <div class="section-title" data-i18n="sec_tasks">✅ Quick Tasks</div>
+        <a href="http://localhost:3000/help" class="row-card" style="background:#FFF8F0; border-left:5px solid #8B4000;">
+          <span class="row-icon">📞</span>
+          <div class="row-body">
+            <div class="title" data-i18n="task_call">Call Daughter</div>
+            <div class="detail" data-i18n="task_call_d">Tap to call family</div>
+          </div>
+          <span class="row-arrow" style="color:#8B4000;">›</span>
+        </a>
+        <a href="http://localhost:3000/playbook" class="row-card" style="background:#EBF2FF; border-left:5px solid #1A56DB;">
+          <span class="row-icon">🏦</span>
+          <div class="row-body">
+            <div class="title" data-i18n="task_bank">Check Bank Balance</div>
+            <div class="detail" data-i18n="task_bank_d">Safe, guided walkthrough</div>
+          </div>
+          <span class="row-arrow" style="color:#1A56DB;">›</span>
+        </a>
+        <a href="http://localhost:3000/health" class="row-card" style="background:#EDFBF2; border-left:5px solid #1A7340;">
+          <span class="row-icon">💊</span>
+          <div class="row-body">
+            <div class="title" data-i18n="task_med">Medicine Schedule</div>
+            <div class="detail" data-i18n="task_med_d">View today's medicines</div>
+          </div>
+          <span class="row-arrow" style="color:#1A7340;">›</span>
+        </a>
+      </div>
+
+      <!-- Learn Something New -->
+      <div class="reveal reveal-d4" style="margin-bottom:32px;">
+        <div class="section-title" data-i18n="sec_learn">📖 Learn Something New</div>
+        <a href="http://localhost:3000/playbook" class="learn-banner">
+          <span style="font-size:3rem;">🎓</span>
+          <div class="row-body">
+            <div class="title" style="font-size:1.35rem;" data-i18n="learn_title">Step-by-Step Guided Practice</div>
+            <div class="detail" data-i18n="learn_detail">Pay bills, check bank balance, order medicines — practise safely first</div>
+          </div>
+          <span class="row-arrow" style="color:#1A7340;">›</span>
+        </a>
+      </div>
+
+      <!-- Scam Demo + Guardian -->
+      <div class="twin-grid reveal reveal-d5" id="scam-demo">
+        <div class="twin-card" style="background:#FFF0F0; border-color:#CC0000;" onclick="alert('In the ElderBridge app, this triggers our AI-powered Cognitive Lock that asks you important questions to verify if someone is trying to scam you. Try it in the full app!')">
+          <div class="tc-icon">🛡️</div>
+          <div class="tc-title" style="color:#CC0000;" data-i18n="scam_title">Scam Demo</div>
+          <div class="tc-sub" data-i18n="scam_sub">See how I protect you</div>
+        </div>
+        <a href="http://localhost:3000/guardian" class="twin-card" style="background:#EEF2FF; border-color:#555577;">
+          <div class="tc-icon">👨‍👩‍👧</div>
+          <div class="tc-title" style="color:#555577;" data-i18n="guard_title">Guardian</div>
+          <div class="tc-sub" data-i18n="guard_sub">Family dashboard</div>
+        </a>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ═══════════════════ MORE FEATURES ═══════════════════ -->
+  <section class="more">
+    <div class="more-inner">
+      <h2 class="reveal" data-i18n="more_title">Explore More</h2>
+      <div class="more-grid">
+        <a href="http://localhost:3000/diary" class="more-card reveal reveal-d1">
+          <div class="mc-icon">📖</div>
+          <div class="mc-title" style="color:#8B4000;" data-i18n="more_diary_t">My Diary</div>
+          <div class="mc-sub" data-i18n="more_diary_d">Write your daily thoughts and memories</div>
+        </a>
+        <a href="http://localhost:3000/digest" class="more-card reveal reveal-d2">
+          <div class="mc-icon">📧</div>
+          <div class="mc-title" style="color:#1A56DB;" data-i18n="more_digest_t">Weekly Digest</div>
+          <div class="mc-sub" data-i18n="more_digest_d">Your family receives a weekly email of your progress</div>
+        </a>
+
+        <a href="tel:112" class="more-card sos-card reveal reveal-d3">
+          <div class="mc-icon">🆘</div>
+          <div class="mc-title" data-i18n="more_sos_t">Emergency SOS</div>
+          <div class="mc-sub" data-i18n="more_sos_d">Tap to call 112 for emergency help</div>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════ FOOTER ═══════════════════ -->
+  <footer class="footer">
+    <div class="footer-inner">
+      <div class="footer-links">
+        <a href="#home">Home</a>
+        <a href="http://localhost:3000/tasks">Tasks</a>
+        <a href="http://localhost:3000/health">Health</a>
+        <a href="http://localhost:3000/playbook">Practice</a>
+        <a href="http://localhost:3000/diary">Diary</a>
+        <a href="http://localhost:3000/guardian">Guardian</a>
+        <a href="http://localhost:3000/digest">Digest</a>
+        <a href="http://localhost:3000/help">Get Help</a>
+      </div>
+      <p class="footer-msg" data-i18n="footer_msg">You're never alone 💚 ElderBridge is always here for you.</p>
+      <p class="footer-brand">ElderBridge © 2026 — Built with ❤️ for seniors</p>
+    </div>
+  </footer>
+
+  <!-- A+ ACCESSIBILITY FAB -->
+  <button type="button" class="a-plus" id="a-plus-btn" aria-label="Increase text size">A+</button>
+
+  <!-- LANGUAGE TOGGLE -->
+  <button type="button" id="lang-btn" aria-label="Switch language"
+    style="position:fixed; bottom:32px; left:32px; width:64px; height:64px; border-radius:50%;
+           background:#1A56DB; color:#fff; font-weight:800; font-size:1rem; border:none;
+           cursor:pointer; box-shadow:0 10px 25px -5px rgba(26,86,219,0.4);
+           transition:transform .2s ease; z-index:50; font-family:inherit;"
+    onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">EN</button>
+
+  <!-- ═══════════════════ SCRIPT ═══════════════════ -->
+  <script>
+    // Dynamic greeting
+    (function() {
+      var h = new Date().getHours();
+      var greet = h < 12 ? 'Good Morning' : h < 17 ? 'Good Afternoon' : 'Good Evening';
+      document.getElementById('greeting-text').textContent = greet + ', Ajji 🌅';
+
+      var opts = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
+      document.getElementById('date-text').textContent = new Date().toLocaleDateString('en-IN', opts);
+    })();
+
+    // A+ text toggle
+    var largeText = false;
+    document.getElementById('a-plus-btn').addEventListener('click', function() {
+      largeText = !largeText;
+      document.documentElement.style.fontSize = largeText ? '120%' : '100%';
+      this.classList.toggle('active', largeText);
+    });
+
+    // Mic button toggle
+    var micBtn = document.getElementById('mic-btn');
+    var micLabel = document.getElementById('mic-label');
+    var listening = false;
+    var recognition = null;
+
+    micBtn.addEventListener('click', function() {
+      if (listening) {
+        // Stop listening
+        listening = false;
+        micBtn.classList.remove('listening');
+        micLabel.textContent = 'Tap and tell me what you want to do today';
+        micLabel.style.color = '#787878';
+        if (recognition) { try { recognition.stop(); } catch(e) {} }
+        return;
+      }
+
+      // Request microphone permission first
+      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        navigator.mediaDevices.getUserMedia({ audio: true }).then(function(stream) {
+          // Permission granted — stop the stream (SpeechRecognition manages its own)
+          stream.getTracks().forEach(function(t) { t.stop(); });
+          startRecognition();
+        }).catch(function(err) {
+          micLabel.textContent = '🚫 Microphone blocked! Allow mic in browser settings.';
+          micLabel.style.color = '#CC0000';
+        });
+      } else {
+        startRecognition(); // Try anyway
+      }
+    });
+
+    function startRecognition() {
+      var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SR) {
+        micLabel.textContent = '⚠️ Voice not supported in this browser. Try Chrome!';
+        micLabel.style.color = '#8B4000';
+        return;
+      }
+
+      listening = true;
+      micBtn.classList.add('listening');
+      micLabel.textContent = '🎤 Listening... speak now';
+      micLabel.style.color = '#CC0000';
+
+      recognition = new SR();
+      recognition.lang = currentLang === 'kn' ? 'kn-IN' : 'en-IN';
+      recognition.continuous = false;
+      recognition.interimResults = true;
+      recognition.maxAlternatives = 1;
+
+      recognition.onaudiostart = function() {
+        micLabel.textContent = '🎤 Hearing you... keep speaking';
+        micLabel.style.color = '#1A56DB';
+      };
+
+      recognition.onresult = function(e) {
+        var transcript = '';
+        var isFinal = false;
+        for (var i = 0; i < e.results.length; i++) {
+          transcript += e.results[i][0].transcript;
+          if (e.results[i].isFinal) isFinal = true;
+        }
+
+        // Show live text as user speaks
+        micLabel.textContent = '💬 "' + transcript + '"';
+        micLabel.style.color = '#1A56DB';
+
+        if (isFinal) {
+          micLabel.textContent = '✅ I heard: "' + transcript + '"';
+          micLabel.style.color = '#1A7340';
+          listening = false;
+          micBtn.classList.remove('listening');
+
+          // Route based on intent
+          var l = transcript.toLowerCase();
+          var APP = 'http://localhost:3000';
+          setTimeout(function() {
+            if (l.includes('bill') || l.includes('electricity')) window.location.href = APP + '/tasks';
+            else if (l.includes('call') || l.includes('daughter')) window.location.href = APP + '/help';
+            else if (l.includes('bank') || l.includes('balance')) window.location.href = APP + '/playbook';
+            else if (l.includes('medicine') || l.includes('tablet')) window.location.href = APP + '/health';
+            else if (l.includes('guardian') || l.includes('help')) window.location.href = APP + '/help';
+            else if (l.includes('practice') || l.includes('learn')) window.location.href = APP + '/playbook';
+            else if (l.includes('diary')) window.location.href = APP + '/diary';
+            else if (l.includes('task')) window.location.href = APP + '/tasks';
+            else { micLabel.textContent = '🔄 Didn\'t understand. Tap mic and try: "Pay bill" or "Call daughter"'; micLabel.style.color = '#8B4000'; }
+          }, 1500);
+        }
+      };
+
+      recognition.onerror = function(e) {
+        listening = false;
+        micBtn.classList.remove('listening');
+        if (e.error === 'not-allowed') {
+          micLabel.textContent = '🚫 Microphone blocked! Click the 🔒 icon in address bar → Allow mic';
+          micLabel.style.color = '#CC0000';
+        } else if (e.error === 'no-speech') {
+          micLabel.textContent = '🔇 No speech detected. Tap mic and speak clearly.';
+          micLabel.style.color = '#8B4000';
+        } else if (e.error === 'network') {
+          micLabel.textContent = '🌐 Network error. Check your internet connection.';
+          micLabel.style.color = '#CC0000';
+        } else {
+          micLabel.textContent = '⚠️ Error: ' + e.error + '. Tap to try again.';
+          micLabel.style.color = '#CC0000';
+        }
+      };
+
+      recognition.onend = function() {
+        if (listening) {
+          listening = false;
+          micBtn.classList.remove('listening');
+          // If no result came, show hint
+          if (micLabel.textContent.includes('Listening') || micLabel.textContent.includes('Hearing')) {
+            micLabel.textContent = '🔇 Didn\'t catch that. Tap mic and speak louder.';
+            micLabel.style.color = '#8B4000';
+          }
+        }
+      };
+
+      try {
+        recognition.start();
+      } catch(e) {
+        micLabel.textContent = '⚠️ Could not start mic. Reload the page and try.';
+        micLabel.style.color = '#CC0000';
+        listening = false;
+        micBtn.classList.remove('listening');
+      }
+    }
+
+    // Scroll reveal
+    var reveals = document.querySelectorAll('.reveal');
+    var observer = new IntersectionObserver(function(entries) {
+      entries.forEach(function(entry) {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+        }
+      });
+    }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+    reveals.forEach(function(el) { observer.observe(el); });
+
+    // ═══════════════════ LANGUAGE SYSTEM ═══════════════════
+    var currentLang = 'en';
+    var translations = {
+      kn: {
+        nav_home: 'ಮನೆ', nav_tasks: 'ನನ್ನ ಕಾರ್ಯಗಳು', nav_practice: 'ಅಭ್ಯಾಸ', nav_guardian: 'ರಕ್ಷಕ', nav_help: 'ಸಹಾಯ ಪಡೆಯಿರಿ',
+        banner_grandma: 'ಅಜ್ಜಿಯೊಂದಿಗೆ ಕಥೆ ಹೇಳಿ 📖', banner_grandpa: 'ತಾತನೊಂದಿಗೆ ಹೊಸದನ್ನು ಕಲಿಯಿರಿ 🎓',
+        hero_title: '<span>ElderBridge</span> ಗೆ ಸ್ವಾಗತ', hero_sub: 'ಕಾಳಜಿ ಮತ್ತು ಸಂಪರ್ಕ ಸೇರುವ ಸ್ಥಳ',
+        cta_start: 'ನಿಮ್ಮ ಪ್ರಯಾಣ ಪ್ರಾರಂಭಿಸಿ', cta_talk: 'ನಮ್ಮೊಂದಿಗೆ ಮಾತನಾಡಿ',
+        scroll_hint: '↓ ಕೆಳಗೆ ಸ್ಕ್ರಾಲ್ ಮಾಡಿ',
+        card_remind_t: 'ಇಂದಿನ ಜ್ಞಾಪನೆಗಳು', card_remind_d: 'ಔಷಧಿ ಮತ್ತು ಬಿಲ್ ಜ್ಞಾಪನೆಗಳು — ಯಾವುದನ್ನೂ ಮರೆಯಬೇಡಿ.',
+        card_tasks_t: 'ನನ್ನ ಕಾರ್ಯಗಳು', card_tasks_d: 'ಇಂದಿನ ತ್ವರಿತ ಕಾರ್ಯಗಳು — ಬಿಲ್ ಪಾವತಿ, ಬ್ಯಾಲೆನ್ಸ್ ಪರಿಶೀಲನೆ ಇನ್ನೂ ಹೆಚ್ಚು.',
+        card_learn_t: 'ಕಲಿಯಿರಿ ಮತ್ತು ಅಭ್ಯಾಸ ಮಾಡಿ', card_learn_d: 'ಬಿಲ್ ಪಾವತಿ, ಬ್ಯಾಂಕಿಂಗ್ ಇತ್ಯಾದಿ ಸುರಕ್ಷಿತವಾಗಿ ಅಭ್ಯಾಸ ಮಾಡಲು ಹಂತ-ಹಂತ ಮಾರ್ಗದರ್ಶಿಗಳು.',
+        card_scam_t: 'ವಂಚನೆ ರಕ್ಷಣೆ', card_scam_d: 'AI-ಚಾಲಿತ ರಕ್ಷಣೆ — ಅಪಾಯಕಾರಿ ವೆಬ್‌ಸೈಟ್‌ಗಳನ್ನು ತಡೆಯುತ್ತದೆ.',
+        card_guard_t: 'ರಕ್ಷಕ ಡ್ಯಾಶ್‌ಬೋರ್ಡ್', card_guard_d: 'ನಿಮ್ಮ ಕುಟುಂಬ ಸಂಪರ್ಕದಲ್ಲಿರುತ್ತದೆ — ನಿಮ್ಮ ಸುರಕ್ಷತೆಯನ್ನು ಗಮನಿಸುತ್ತದೆ.',
+        card_health_t: 'ಆರೋಗ್ಯ ಮತ್ತು ಔಷಧಿ', card_health_d: 'ನಿಮ್ಮ ಔಷಧಿ ಮತ್ತು ದೈನಂದಿನ ಆರೋಗ್ಯ ದಿನಚರಿಯನ್ನು ಸುಲಭವಾಗಿ ಟ್ರ್ಯಾಕ್ ಮಾಡಿ.',
+        mic_idle: 'ಟ್ಯಾಪ್ ಮಾಡಿ ಮತ್ತು ನಿಮಗೆ ಏನು ಬೇಕು ಎಂದು ಹೇಳಿ',
+        sec_reminders: '🔔 ಇಂದಿನ ಜ್ಞಾಪನೆಗಳು', med_detail: 'ಬೆಳಗಿನ ಉಪಾಹಾರದ ನಂತರ 1 ಮಾತ್ರೆ',
+        bill_title: 'ವಿದ್ಯುತ್ ಬಿಲ್ ಇಂದು ಬಾಕಿ', bill_detail: '₹1,240 ಮಧ್ಯರಾತ್ರಿಯೊಳಗೆ ಬಾಕಿ', due_today: 'ಇಂದು ಬಾಕಿ',
+        sec_tasks: '✅ ತ್ವರಿತ ಕಾರ್ಯಗಳು',
+        task_call: 'ಮಗಳಿಗೆ ಕರೆ ಮಾಡಿ', task_call_d: 'ಕುಟುಂಬಕ್ಕೆ ಕರೆ ಮಾಡಲು ಟ್ಯಾಪ್ ಮಾಡಿ',
+        task_bank: 'ಬ್ಯಾಂಕ್ ಬ್ಯಾಲೆನ್ಸ್ ಪರಿಶೀಲಿಸಿ', task_bank_d: 'ಸುರಕ್ಷಿತ, ಮಾರ್ಗದರ್ಶಿ ಪ್ರಕ್ರಿಯೆ',
+        task_med: 'ಔಷಧಿ ವೇಳಾಪಟ್ಟಿ', task_med_d: 'ಇಂದಿನ ಔಷಧಿಗಳನ್ನು ನೋಡಿ',
+        sec_learn: '📖 ಹೊಸದನ್ನು ಕಲಿಯಿರಿ',
+        learn_title: 'ಹಂತ-ಹಂತ ಮಾರ್ಗದರ್ಶಿ ಅಭ್ಯಾಸ', learn_detail: 'ಬಿಲ್ ಪಾವತಿ, ಬ್ಯಾಂಕ್ ಬ್ಯಾಲೆನ್ಸ್ ಪರಿಶೀಲನೆ — ಮೊದಲು ಸುರಕ್ಷಿತವಾಗಿ ಅಭ್ಯಾಸ ಮಾಡಿ',
+        scam_title: 'ವಂಚನೆ ಡೆಮೊ', scam_sub: 'ನಾನು ನಿಮ್ಮನ್ನು ಹೇಗೆ ರಕ್ಷಿಸುತ್ತೇನೆ ನೋಡಿ',
+        guard_title: 'ರಕ್ಷಕ', guard_sub: 'ಕುಟುಂಬ ಡ್ಯಾಶ್‌ಬೋರ್ಡ್',
+        more_title: 'ಇನ್ನಷ್ಟು ಅನ್ವೇಷಿಸಿ',
+        more_diary_t: 'ನನ್ನ ಡೈರಿ', more_diary_d: 'ನಿಮ್ಮ ದೈನಂದಿನ ಆಲೋಚನೆ ಮತ್ತು ನೆನಪುಗಳನ್ನು ಬರೆಯಿರಿ',
+        more_digest_t: 'ವಾರದ ಸಾರಾಂಶ', more_digest_d: 'ನಿಮ್ಮ ಕುಟುಂಬಕ್ಕೆ ವಾರಕ್ಕೊಮ್ಮೆ ಇಮೇಲ್ ಸಾರಾಂಶ ಬರುತ್ತದೆ',
+        more_sos_t: 'ತುರ್ತು SOS', more_sos_d: '112 ಗೆ ಕರೆ ಮಾಡಲು ಟ್ಯಾಪ್ ಮಾಡಿ',
+        footer_msg: 'ನೀವು ಎಂದಿಗೂ ಒಬ್ಬಂಟಿಯಲ್ಲ 💚 ElderBridge ಯಾವಾಗಲೂ ನಿಮ್ಮ ಜೊತೆಗಿದೆ.',
+        // Greeting parts
+        greet_morning: 'ಶುಭೋದಯ', greet_afternoon: 'ಶುಭ ಮಧ್ಯಾಹ್ನ', greet_evening: 'ಶುಭ ಸಂಜೆ',
+      },
+      en: {
+        nav_home: 'Home', nav_tasks: 'My Tasks', nav_practice: 'Practice', nav_guardian: 'Guardian', nav_help: 'Get Help',
+        banner_grandma: 'Share a story with Grandma 📖', banner_grandpa: 'Learn something new with Grandpa 🎓',
+        hero_title: 'Welcome to <span>ElderBridge</span>', hero_sub: 'Where care meets connection.',
+        cta_start: 'Start Your Journey', cta_talk: 'Talk to Us',
+        scroll_hint: '↓ Scroll down',
+        card_remind_t: "Today's Reminders", card_remind_d: 'Medicine and bill reminders so you never miss an important moment.',
+        card_tasks_t: 'My Tasks', card_tasks_d: 'Quick tasks for today — paying bills, checking balance and more.',
+        card_learn_t: 'Learn & Practice', card_learn_d: 'Step-by-step guides to safely practice paying bills, banking and more.',
+        card_scam_t: 'Scam Protection', card_scam_d: 'AI-powered protection that blocks dangerous websites before they can harm you.',
+        card_guard_t: 'Guardian Dashboard', card_guard_d: 'Your family stays connected — monitoring your safety and celebrating your progress.',
+        card_health_t: 'Health & Medicines', card_health_d: 'Track your medicines and daily health routine with ease.',
+        mic_idle: 'Tap and tell me what you want to do today',
+        sec_reminders: "🔔 Today's Reminders", med_detail: '1 tablet after breakfast',
+        bill_title: 'Electricity Bill Due Today', bill_detail: '₹1,240 due by midnight', due_today: 'Due Today',
+        sec_tasks: '✅ Quick Tasks',
+        task_call: 'Call Daughter', task_call_d: 'Tap to call family',
+        task_bank: 'Check Bank Balance', task_bank_d: 'Safe, guided walkthrough',
+        task_med: 'Medicine Schedule', task_med_d: "View today's medicines",
+        sec_learn: '📖 Learn Something New',
+        learn_title: 'Step-by-Step Guided Practice', learn_detail: 'Pay bills, check bank balance, order medicines — practise safely first',
+        scam_title: 'Scam Demo', scam_sub: 'See how I protect you',
+        guard_title: 'Guardian', guard_sub: 'Family dashboard',
+        more_title: 'Explore More',
+        more_diary_t: 'My Diary', more_diary_d: 'Write your daily thoughts and memories',
+        more_digest_t: 'Weekly Digest', more_digest_d: 'Your family receives a weekly email of your progress',
+        more_sos_t: 'Emergency SOS', more_sos_d: 'Tap to call 112 for emergency help',
+        footer_msg: "You're never alone 💚 ElderBridge is always here for you.",
+        greet_morning: 'Good Morning', greet_afternoon: 'Good Afternoon', greet_evening: 'Good Evening',
+      }
+    };
+
+    function applyLanguage(lang) {
+      currentLang = lang;
+      localStorage.setItem('elderbridge-lang', lang);
+      var dict = translations[lang];
+      // Swap all data-i18n elements
+      document.querySelectorAll('[data-i18n]').forEach(function(el) {
+        var key = el.getAttribute('data-i18n');
+        if (dict[key]) {
+          if (key === 'hero_title') {
+            el.innerHTML = dict[key]; // contains <span>
+          } else {
+            el.textContent = dict[key];
+          }
+        }
+      });
+      // Update greeting
+      var h = new Date().getHours();
+      var greet = h < 12 ? dict.greet_morning : h < 17 ? dict.greet_afternoon : dict.greet_evening;
+      document.getElementById('greeting-text').textContent = greet + ', Ajji 🌅';
+      // Update date locale
+      var locale = lang === 'kn' ? 'kn-IN' : 'en-IN';
+      var opts = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
+      document.getElementById('date-text').textContent = new Date().toLocaleDateString(locale, opts);
+      // Update lang button
+      document.getElementById('lang-btn').textContent = lang === 'en' ? 'ಕನ್ನಡ' : 'EN';
+      // Update html lang
+      document.documentElement.lang = lang === 'kn' ? 'kn' : 'en';
+      // Update font for Kannada
+      if (lang === 'kn') {
+        document.body.style.fontFamily = "'Noto Sans Kannada', 'Nunito', sans-serif";
+      } else {
+        document.body.style.fontFamily = "'Nunito', 'Quicksand', sans-serif";
+      }
+    }
+
+    // Language toggle button
+    document.getElementById('lang-btn').addEventListener('click', function() {
+      applyLanguage(currentLang === 'en' ? 'kn' : 'en');
+    });
+
+    // Set initial button text
+    document.getElementById('lang-btn').textContent = 'ಕನ್ನಡ';
+  </script>
+</body>
+</html>

@@ -72,7 +72,7 @@ export default function LiveHelpSession() {
             <ArrowLeft size={28} />
           </a>
           <div className="w-3 h-3 bg-[#1A7340] rounded-full animate-pulse" />
-          <span className="text-[20px] text-white font-bold">Live Session with Kamala</span>
+          <span className="text-[20px] text-white font-bold">Live Session with Ajji</span>
           <span className="text-[16px] text-[#999999] font-semibold">Connected • {elapsed}</span>
         </div>
 
@@ -99,14 +99,119 @@ export default function LiveHelpSession() {
       <div className="flex-1 flex overflow-hidden">
 
         {/* Screen view + click overlay */}
-        <div className="flex-1 relative bg-[#0A0A0A] flex items-center justify-center">
-          {/* Placeholder for WebRTC video stream */}
-          <div className="w-full h-full flex items-center justify-center">
-            <div className="text-center text-[#666666]">
-              <div className="text-[64px] mb-4">📺</div>
-              <p className="text-[24px] font-semibold">Senior&apos;s screen will appear here</p>
-              <p className="text-[18px] mt-2">WebRTC stream connects automatically</p>
+        <div className="flex-1 relative bg-[#0A0A0A] flex items-center justify-center overflow-hidden">
+          {/* Simulated Senior's Screen */}
+          <div className="w-[420px] h-full max-h-[780px] bg-[#FFFDF5] rounded-2xl overflow-y-auto shadow-2xl border-2 border-[#333] relative" style={{ fontFamily: "'Segoe UI', sans-serif" }}>
+            {/* Phone status bar */}
+            <div className="sticky top-0 z-10 bg-[#FFFDF5] px-4 py-2 flex items-center justify-between border-b border-[#E5E5E5]">
+              <span className="text-[12px] font-bold text-[#444]">9:41 AM</span>
+              <span className="text-[12px] font-bold text-[#444]">📶 🔋 92%</span>
             </div>
+
+            {/* Senior's home screen content */}
+            <div className="p-5">
+              {/* Greeting */}
+              <div className="mb-5">
+                <p className="text-[22px] font-bold text-[#1A1A1A]">Good Morning, Ajji 🌅</p>
+                <p className="text-[14px] text-[#767676] font-semibold">Tuesday, 29 April 2026</p>
+              </div>
+
+              {/* Reminder cards */}
+              <div className="mb-5">
+                <p className="text-[16px] font-bold text-[#1A1A1A] mb-3">🔔 Today&apos;s Reminders</p>
+                <div className="flex items-center gap-3 p-4 rounded-xl mb-2" style={{ background: "#EDFBF2", borderLeft: "4px solid #1A7340" }}>
+                  <span className="text-[24px]">💊</span>
+                  <div className="flex-1">
+                    <p className="text-[15px] font-bold text-[#1A1A1A]">Metformin 500mg</p>
+                    <p className="text-[12px] text-[#444] font-semibold">1 tablet after breakfast</p>
+                  </div>
+                  <span className="text-[11px] font-bold text-[#1A7340] bg-[#1A734018] px-2 py-1 rounded-full">8:30 AM</span>
+                </div>
+                <div className="flex items-center gap-3 p-4 rounded-xl" style={{ background: "#FFF0F0", borderLeft: "4px solid #CC0000" }}>
+                  <span className="text-[24px]">⚡</span>
+                  <div className="flex-1">
+                    <p className="text-[15px] font-bold text-[#1A1A1A]">Electricity Bill</p>
+                    <p className="text-[12px] text-[#444] font-semibold">₹1,240 due today</p>
+                  </div>
+                  <span className="text-[11px] font-bold text-[#CC0000] bg-[#CC000018] px-2 py-1 rounded-full">Due Today</span>
+                </div>
+              </div>
+
+              {/* Bill Payment Form (what Ajji is trying to do) */}
+              <div className="mb-5 p-4 rounded-xl border-2 border-[#1A56DB] bg-[#EBF2FF]">
+                <p className="text-[16px] font-bold text-[#1A56DB] mb-3">💡 Pay Electricity Bill</p>
+                <div className="mb-3">
+                  <label className="text-[12px] font-semibold text-[#444] block mb-1">Consumer Number</label>
+                  <div className="bg-white border-2 border-[#D0C8B8] rounded-lg px-3 py-2 text-[14px] text-[#1A1A1A] font-semibold">
+                    1234 5678 9012
+                  </div>
+                </div>
+                <div className="mb-3">
+                  <label className="text-[12px] font-semibold text-[#444] block mb-1">Amount to Pay</label>
+                  <div className="bg-white border-2 border-[#D0C8B8] rounded-lg px-3 py-2 text-[14px] text-[#1A1A1A] font-bold">
+                    ₹ 1,240.00
+                  </div>
+                </div>
+                <div className="mb-3">
+                  <label className="text-[12px] font-semibold text-[#444] block mb-1">Payment Method</label>
+                  <div className="bg-white border-2 border-[#1A56DB] rounded-lg px-3 py-2 text-[14px] text-[#1A56DB] font-semibold">
+                    🏦 SBI Savings A/c ****4521
+                  </div>
+                </div>
+                <button className="w-full py-3 bg-[#1A7340] text-white rounded-xl text-[16px] font-bold mt-1"
+                  style={{ minHeight: "auto", minWidth: "auto" }}
+                  onClick={(e) => e.preventDefault()}>
+                  ✅ Proceed to Pay
+                </button>
+              </div>
+
+              {/* Quick tasks */}
+              <div className="mb-5">
+                <p className="text-[16px] font-bold text-[#1A1A1A] mb-3">✅ Quick Tasks</p>
+                {[
+                  { icon: "📞", title: "Call Daughter", sub: "Tap to call", color: "#8B4000", bg: "#FFF8F0" },
+                  { icon: "💊", title: "Medicine Schedule", sub: "View medicines", color: "#1A7340", bg: "#EDFBF2" },
+                ].map((t) => (
+                  <div key={t.title} className="flex items-center gap-3 p-3 rounded-xl mb-2" style={{ background: t.bg, borderLeft: `4px solid ${t.color}` }}>
+                    <span className="text-[20px]">{t.icon}</span>
+                    <div className="flex-1">
+                      <p className="text-[14px] font-bold text-[#1A1A1A]">{t.title}</p>
+                      <p className="text-[11px] text-[#444] font-semibold">{t.sub}</p>
+                    </div>
+                    <span className="text-[18px]" style={{ color: t.color }}>›</span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Bottom nav mock */}
+              <div className="flex items-center justify-around py-3 border-t-2 border-[#D0C8B8] bg-[#FFFDF5] -mx-5 px-3">
+                {[
+                  { icon: "🏠", label: "Home", active: true },
+                  { icon: "📋", label: "Tasks", active: false },
+                  { icon: "❤️", label: "Health", active: false },
+                  { icon: "📖", label: "Diary", active: false },
+                  { icon: "❓", label: "Help", active: false },
+                ].map((n) => (
+                  <div key={n.label} className="flex flex-col items-center gap-0.5">
+                    <span className="text-[18px]">{n.icon}</span>
+                    <span className={`text-[10px] font-bold ${n.active ? "text-[#1A56DB]" : "text-[#444]"}`}>{n.label}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* "LIVE" badge */}
+          <div className="absolute top-4 left-4 flex items-center gap-2 bg-[#CC0000] px-3 py-1.5 rounded-lg">
+            <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
+            <span className="text-white text-[13px] font-bold">LIVE — Ajji&apos;s Screen</span>
+          </div>
+
+          {/* Instruction overlay */}
+          <div className="absolute bottom-4 left-4 right-80 bg-black/70 backdrop-blur px-4 py-2.5 rounded-xl">
+            <p className="text-white/90 text-[13px] font-semibold text-center">
+              👆 Click anywhere on Ajji&apos;s screen to draw circles or add text labels to guide her
+            </p>
           </div>
 
           {/* Live annotations display */}

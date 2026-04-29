@@ -6,6 +6,7 @@ import {
   Shield, Activity, TrendingUp, AlertTriangle, Video,
   ClipboardList, Phone, Settings, Mail, Globe
 } from "lucide-react";
+import { useLanguage } from "@/hooks/useLanguage";
 
 interface ConfidenceData {
   score: number;
@@ -47,10 +48,11 @@ const LEVEL_LABELS: Record<string, string> = {
   digital_champion:   "🏆 Digital Champion",
 };
 
-const fadeUp = { hidden: { opacity:0, y:16 }, show: { opacity:1, y:0, transition: { ease:"easeOut", duration:0.4 } } };
+const fadeUp = { hidden: { opacity:0, y:16 }, show: { opacity:1, y:0, transition: { ease:"easeOut" as const, duration:0.4 } } };
 const stagger = { hidden: {}, show: { transition: { staggerChildren: 0.08 } } };
 
 export default function GuardianDashboard() {
+  const { t } = useLanguage();
   const [alerts,     setAlerts]     = useState<Alert[]>(DEMO_ALERTS);
   const [confidence, setConfidence] = useState<ConfidenceData | null>(null);
   const [scamUrl,    setScamUrl]    = useState("");
@@ -104,15 +106,15 @@ export default function GuardianDashboard() {
         >
           <div>
             <h1 className="text-[32px] md:text-[36px] font-bold text-[#1A1A1A] mb-1">
-              Kamala&apos;s Digital Journey
+              {t("guardian_title")}
             </h1>
             <p className="text-[18px] md:text-[20px] text-[#444444] font-semibold">
-              Guardian Dashboard — You&apos;re helping them stay safe online
+              {t("guardian_sub")}
             </p>
           </div>
           <a href="/guardian/live-help"
             className="flex items-center gap-3 px-6 py-4 bg-[#1A56DB] hover:bg-[#1446B8] text-white rounded-xl text-[18px] font-bold transition-all shadow-lg focus:outline-none focus:ring-4 focus:ring-[#FF6B00]">
-            <Video size={22} /> Join Their Screen Now
+            <Video size={22} /> {t("guardian_join")}
           </a>
         </motion.div>
 
@@ -242,8 +244,8 @@ export default function GuardianDashboard() {
         {/* ── Section 14: Live Scam URL Checker ── */}
         <motion.div id="scam-check" className="bg-white rounded-2xl shadow-md p-6 mb-6"
           initial={{ opacity:0, y:16 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.35 }}>
-          <h2 className="text-[22px] font-bold text-[#1A1A1A] mb-2">🛡️ Live URL Safety Checker</h2>
-          <p className="text-[16px] text-[#444] font-semibold mb-4">Enter any website URL to check if it&apos;s safe for Kamala</p>
+          <h2 className="text-[22px] font-bold text-[#1A1A1A] mb-2">{t("guardian_scam_check")}</h2>
+          <p className="text-[16px] text-[#444] font-semibold mb-4">{t("guardian_safe_for")}</p>
           <div className="flex gap-3 mb-4 flex-wrap">
             <input
               type="text"
@@ -255,7 +257,7 @@ export default function GuardianDashboard() {
             />
             <button onClick={checkScamUrl} disabled={checking}
               className="px-6 py-3 bg-[#1A56DB] hover:bg-[#1446B8] text-white rounded-xl font-bold text-[16px] transition-all focus:outline-none focus:ring-4 focus:ring-[#FF6B00] disabled:opacity-60">
-              {checking ? "Checking…" : "Check URL"}
+              {checking ? "Checking…" : t("guardian_check_btn")}
             </button>
           </div>
           {scamResult && (
@@ -290,9 +292,9 @@ export default function GuardianDashboard() {
           initial={{ opacity:0, y:16 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.4 }}>
           <div className="flex items-center justify-between flex-wrap gap-4">
             <div>
-              <h2 className="text-[22px] font-bold text-[#1A1A1A] mb-1">📧 Weekly Digest</h2>
+              <h2 className="text-[22px] font-bold text-[#1A1A1A] mb-1">{t("guardian_digest")}</h2>
               <p className="text-[16px] font-semibold text-[#444]">
-                Sends every Sunday to Priya with Kamala&apos;s highlights, scam alerts &amp; progress
+                {t("guardian_digest_d")}
               </p>
             </div>
             <div className="flex gap-3 flex-wrap">

@@ -3,6 +3,7 @@
 import React from "react";
 import { Heart, Pill, Activity, Calendar } from "lucide-react";
 import { BottomNavigation } from "@/components/layout/BottomNavigation";
+import { useLanguage } from "@/hooks/useLanguage";
 import { clsx } from "clsx";
 
 const medicines = [
@@ -12,12 +13,13 @@ const medicines = [
 ];
 
 const vitals = [
-  { label: "Blood Pressure", value: "128 / 82", icon: Activity, unit: "mmHg", status: "normal" },
-  { label: "Blood Sugar",    value: "112",       icon: Heart,    unit: "mg/dL", status: "normal" },
-  { label: "Heart Rate",     value: "74",        icon: Heart,    unit: "bpm",   status: "normal" },
+  { labelKey: "health_bp",    value: "128 / 82", icon: Activity, unit: "mmHg", status: "normal" },
+  { labelKey: "health_sugar", value: "112",      icon: Heart,    unit: "mg/dL", status: "normal" },
+  { labelKey: "health_hr",    value: "74",       icon: Heart,    unit: "bpm",   status: "normal" },
 ];
 
 export default function HealthPage() {
+  const { t } = useLanguage();
   return (
     <>
       <main className="min-h-screen bg-[#FFFDF5] pb-24">
@@ -25,16 +27,16 @@ export default function HealthPage() {
 
           <header className="mb-8 animate-fade-in">
             <h1 className="text-[42px] font-bold text-[#1A1A1A] leading-tight mb-2">
-              ❤️ Health & Medicines
+              ❤️ {t("health_title")}
             </h1>
-            <p className="text-[26px] font-semibold text-[#444444]">Keep track of your health easily</p>
+            <p className="text-[26px] font-semibold text-[#444444]">{t("health_track")}</p>
           </header>
 
           {/* Medicines */}
           <section className="mb-8" aria-labelledby="medicines-heading">
             <h2 id="medicines-heading" className="text-[32px] font-bold text-[#1A1A1A] mb-4 flex items-center gap-3">
               <Pill size={32} color="#1A7340" aria-hidden="true" />
-              Today&apos;s Medicines
+              {t("health_meds")}
             </h2>
             <div className="flex flex-col gap-5">
               {medicines.map((med) => (
@@ -53,7 +55,7 @@ export default function HealthPage() {
                   </div>
                   <div className="px-4 py-2 rounded-xl text-[18px] font-bold"
                     style={{ backgroundColor: med.color, color: "#FFFDF5" }}>
-                    Take
+                    {t("health_take")}
                   </div>
                 </div>
               ))}
@@ -64,19 +66,19 @@ export default function HealthPage() {
           <section aria-labelledby="vitals-heading">
             <h2 id="vitals-heading" className="text-[32px] font-bold text-[#1A1A1A] mb-4 flex items-center gap-3">
               <Activity size={32} color="#1A56DB" aria-hidden="true" />
-              Today&apos;s Vitals
+              {t("health_vitals")}
             </h2>
             <div className="flex flex-col gap-5">
               {vitals.map((v) => (
-                <div key={v.label}
+                <div key={v.labelKey}
                   className="flex items-center gap-6 p-6 rounded-2xl bg-[#F5F0E8] border border-[#D0C8B8] shadow-md min-h-[88px]">
                   <div className="flex-1">
-                    <p className="text-[24px] font-semibold text-[#444444]">{v.label}</p>
+                    <p className="text-[24px] font-semibold text-[#444444]">{t(v.labelKey)}</p>
                     <p className="text-[36px] font-bold text-[#1A1A1A]">
                       {v.value} <span className="text-[22px] font-semibold text-[#444444]">{v.unit}</span>
                     </p>
                   </div>
-                  <div className="px-4 py-2 rounded-xl bg-[#EDFBF2] text-[#1A7340] text-[20px] font-bold">Normal</div>
+                  <div className="px-4 py-2 rounded-xl bg-[#EDFBF2] text-[#1A7340] text-[20px] font-bold">{t("health_normal")}</div>
                 </div>
               ))}
             </div>

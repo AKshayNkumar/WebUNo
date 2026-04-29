@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { AnimatePresence } from "framer-motion";
 import { BottomNavigation } from "@/components/layout/BottomNavigation";
+import { useLanguage } from "@/hooks/useLanguage";
 import { PlaybookStep, PlaybookStepData } from "@/components/features/PlaybookStep";
 import { SandboxMode, PracticeComplete, PracticeMetrics } from "@/components/features/SandboxMode";
 
@@ -34,6 +35,7 @@ type Stage = "menu" | "practice" | "playbook" | "done";
 
 export default function PlaybookPage() {
   const [stage,       setStage]       = useState<Stage>("menu");
+  const { t }                         = useLanguage();
   const [stepIndex,   setStepIndex]   = useState(0);
   const [metrics,     setMetrics]     = useState<PracticeMetrics | null>(null);
 
@@ -57,25 +59,25 @@ export default function PlaybookPage() {
         <main className="min-h-screen bg-[#FFFDF5] pb-24">
           <div className="max-w-2xl mx-auto px-6 pt-8">
             <header className="mb-8">
-              <h1 className="text-[42px] font-bold text-[#1A1A1A] mb-2">📋 Step-by-Step Guide</h1>
+              <h1 className="text-[42px] font-bold text-[#1A1A1A] mb-2">📋 {t("playbook_title")}</h1>
               <p className="text-[26px] font-semibold text-[#444444]">
-                Choose a task — I&apos;ll guide you through it
+                {t("playbook_sub")}
               </p>
             </header>
 
             <div className="flex flex-col gap-6">
               {[
                 {
-                  icon: "💡", title: "Pay Electricity Bill",
-                  detail: "5 steps • ~10 minutes", accent: "#CC0000", bg: "#FFF0F0",
+                  icon: "💡", title: t("playbook_bill"),
+                  detail: t("playbook_bill_d"), accent: "#CC0000", bg: "#FFF0F0",
                 },
                 {
-                  icon: "🏦", title: "Check Bank Balance",
-                  detail: "3 steps • ~5 minutes", accent: "#1A56DB", bg: "#EBF2FF",
+                  icon: "🏦", title: t("playbook_bank"),
+                  detail: t("playbook_bank_d"), accent: "#1A56DB", bg: "#EBF2FF",
                 },
                 {
-                  icon: "💊", title: "Order Medicines Online",
-                  detail: "6 steps • ~15 minutes", accent: "#1A7340", bg: "#EDFBF2",
+                  icon: "💸", title: t("playbook_upi"),
+                  detail: t("playbook_upi_d"), accent: "#1A7340", bg: "#EDFBF2",
                 },
               ].map((task) => (
                 <button

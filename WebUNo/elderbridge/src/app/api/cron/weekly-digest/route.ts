@@ -11,7 +11,7 @@ export async function GET(request: Request) {
 
   // Demo: simulate sending digests to all active users
   const mockUsers = [
-    { id: "user_1", fullName: "Kamala", guardianEmail: "priya@example.com" },
+    { id: "user_1", fullName: "Ajji", guardianEmail: "priya@example.com" },
     { id: "user_2", fullName: "Rajan",  guardianEmail: "arjun@example.com" },
   ];
 
